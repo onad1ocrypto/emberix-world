@@ -103,7 +103,7 @@ export class XRCreatureScript extends xb.Script {
       style: { flexDirection: 'column', gap: 14, padding: 20 },
       children: [
         new xb.UIText({
-          text: 'XR CREATURE WORLD',
+          text: 'EMBERIX WORLD',
           style: { fontSize: 28, fontWeight: 'bold', textAlign: 'center' },
         }),
         this.levelText,

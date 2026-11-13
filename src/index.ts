@@ -81,7 +81,7 @@ function bootstrapApplication(): void {
         .then((supported) => {
           if (supported) {
             const options = new xb.Options();
-            options.setAppTitle('XR Creature World');
+            options.setAppTitle('Emberix World');
             options.setAppDescription(
               '3D Virtual Pet & AR Dragon Simulator with EMBER on Solara Island.',
             );

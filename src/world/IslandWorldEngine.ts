@@ -491,7 +491,7 @@ export class IslandWorldEngine {
     ctx.fillStyle = botGrad;
     ctx.fillRect(0, height - 185, width, 185);
 
-    // 3. Top Header Banner: XR CREATURE WORLD · SELFIE PORTRAIT
+    // 3. Top Header Banner: EMBERIX WORLD · SELFIE PORTRAIT
     ctx.save();
     ctx.fillStyle = theme.badgeBg;
     ctx.strokeStyle = theme.border;
@@ -503,7 +503,7 @@ export class IslandWorldEngine {
 
     ctx.fillStyle = theme.accent;
     ctx.font = '900 19px "Fredoka", "Plus Jakarta Sans", sans-serif';
-    ctx.fillText('📸 XR CREATURE WORLD · SELFIE', 42, 42);
+    ctx.fillText('📸 EMBERIX WORLD · SELFIE', 42, 42);
     ctx.fillStyle = '#e2e8f0';
     ctx.font = '700 12px "Plus Jakarta Sans", sans-serif';
     const dateStr = new Date().toISOString().slice(0, 10);

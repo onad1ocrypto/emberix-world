@@ -363,7 +363,7 @@ export class GameUI {
    */
   private renderTitleEmblemSVG(compact = false): string {
     return `
-      <svg viewBox="0 0 540 190" class="${compact ? 'ar-corner-emblem-svg' : 'title-emblem-svg'}" role="img" aria-label="XR Creature World">
+      <svg viewBox="0 0 540 190" class="${compact ? 'ar-corner-emblem-svg' : 'title-emblem-svg'}" role="img" aria-label="Emberix World">
         <defs>
           <linearGradient id="wingOuterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#FFFBEB" />
@@ -479,16 +479,11 @@ export class GameUI {
             <circle cx="318" cy="18" r="2.8" fill="#67E8F9" />
           </g>
 
-          <g font-family="'Lilita One', 'Fredoka', 'Cinzel', sans-serif" font-size="28" font-weight="900" text-anchor="middle" letter-spacing="2">
-            <text x="270" y="57" fill="#090D16" stroke="#090D16" stroke-width="8" paint-order="stroke">XR</text>
-            <text x="270" y="54" fill="url(#xrCyanGrad)" stroke="#0F172A" stroke-width="6" paint-order="stroke">XR</text>
-          </g>
-
           <g font-family="'Lilita One', 'Fredoka', 'Cinzel', sans-serif" font-size="50" font-weight="900" text-anchor="middle" letter-spacing="2.5">
-            <text x="270" y="106" fill="#090514" stroke="#090514" stroke-width="12" stroke-linejoin="round" paint-order="stroke">CREATURE</text>
-            <text x="270" y="103" fill="url(#extrude3DDark)" stroke="#431407" stroke-width="10" stroke-linejoin="round" paint-order="stroke">CREATURE</text>
-            <text x="270" y="99" fill="url(#creatureFireGrad)" stroke="#1E1B4B" stroke-width="7.5" stroke-linejoin="round" paint-order="stroke">CREATURE</text>
-            <text x="270" y="98" fill="none" stroke="#FFFBEB" stroke-width="1.2" stroke-opacity="0.7">CREATURE</text>
+            <text x="270" y="106" fill="#090514" stroke="#090514" stroke-width="12" stroke-linejoin="round" paint-order="stroke">EMBERIX</text>
+            <text x="270" y="103" fill="url(#extrude3DDark)" stroke="#431407" stroke-width="10" stroke-linejoin="round" paint-order="stroke">EMBERIX</text>
+            <text x="270" y="99" fill="url(#creatureFireGrad)" stroke="#1E1B4B" stroke-width="7.5" stroke-linejoin="round" paint-order="stroke">EMBERIX</text>
+            <text x="270" y="98" fill="none" stroke="#FFFBEB" stroke-width="1.2" stroke-opacity="0.7">EMBERIX</text>
           </g>
 
           <g font-family="'Lilita One', 'Fredoka', 'Cinzel', sans-serif" font-size="48" font-weight="900" text-anchor="middle" letter-spacing="4">
@@ -1292,7 +1287,7 @@ export class GameUI {
                 />
               </div>
               <div class="collectible-card-footer">
-                <span>XR CREATURE WORLD · OFFICIAL MINDAR TARGET</span>
+                <span>EMBERIX WORLD · OFFICIAL MINDAR TARGET</span>
                 <span>15 CM × 15 CM</span>
               </div>
             </div>
