@@ -782,6 +782,85 @@ export function clampToIslandBounds(
   return { x: x * scale, z: z * scale };
 }
 
+export const MINIMAP_CENTER_X = 50;
+export const MINIMAP_CENTER_Y = 50;
+export const MINIMAP_SCALE = 1.62; // SVG units per meter (maps [-25m, +25m] across the 84-unit radar interior)
+export const MINIMAP_MAX_SVG_RADIUS = 41.5;
+
+/**
+ * Converts 3D world (x, z) coordinates on Solara Island into 2D SVG radar coordinates (0..100).
+ * Clamps smoothly inside the circular radar bezel while preserving exact directional angle.
+ */
+export function worldToMinimapPoint(
+  worldX: number,
+  worldZ: number,
+  scale = MINIMAP_SCALE,
+): { x: number; y: number; clamped: boolean } {
+  const rawDx = worldX * scale;
+  const rawDy = worldZ * scale;
+  const dist = Math.hypot(rawDx, rawDy);
+  if (dist <= MINIMAP_MAX_SVG_RADIUS || dist === 0) {
+    return {
+      x: Number((MINIMAP_CENTER_X + rawDx).toFixed(2)),
+      y: Number((MINIMAP_CENTER_Y + rawDy).toFixed(2)),
+      clamped: false,
+    };
+  }
+  const ratio = MINIMAP_MAX_SVG_RADIUS / dist;
+  return {
+    x: Number((MINIMAP_CENTER_X + rawDx * ratio).toFixed(2)),
+    y: Number((MINIMAP_CENTER_Y + rawDy * ratio).toFixed(2)),
+    clamped: true,
+  };
+}
+
+/**
+ * Returns the named landmark or region on Solara Island for a given 3D world (x, z) position.
+ */
+export function getIslandZoneLabel(worldX: number, worldZ: number): string {
+  if (
+    Math.abs(worldZ) <= BRIDGE_RAILING_Z + 0.35 &&
+    worldX >= BRIDGE_MIN_X - 0.45 &&
+    worldX <= BRIDGE_MAX_X + 0.45
+  ) {
+    return 'Wooden Bridge';
+  }
+  if (Math.hypot(worldX, worldZ) <= 3.2) {
+    return 'Sunstone Sanctuary';
+  }
+  if (
+    Math.hypot(worldX - 3.35, worldZ - 0.45) <= 2.4 ||
+    Math.hypot(worldX - 5.6, worldZ - 5.8) <= 2.4
+  ) {
+    return 'Warm Dragon Nest';
+  }
+  if (Math.hypot(worldX - 4.95, worldZ - -7.6) <= 4.2) {
+    return 'Pet Sanctuary House';
+  }
+  if (Math.hypot(worldX - 7.5, worldZ - -4.5) <= 3.5) {
+    return 'Sunberry Orchard';
+  }
+  if (Math.hypot(worldX - -2.4, worldZ - -3.2) <= 2.8) {
+    return 'Mana Crystal Spire';
+  }
+  if (Math.hypot(worldX - -1.0, worldZ - -22.2) <= 7.2) {
+    return 'Solara Fantasy Castle';
+  }
+  if (Math.hypot(worldX - -6.2, worldZ - -18.0) <= 5.5) {
+    return 'Waterfall Lagoon';
+  }
+  if (worldX < riverCenterXAt(worldZ)) {
+    return 'West Meadow & Gardens';
+  }
+  if (worldZ < -10) {
+    return 'Northern Highlands';
+  }
+  if (worldZ > 12) {
+    return 'Southern Shoreline';
+  }
+  return 'East Emerald Meadow';
+}
+
 /**
  * Parses and validates the compiled MindAR `.mind` binary target buffer.
  */

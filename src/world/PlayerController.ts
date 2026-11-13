@@ -22,9 +22,9 @@ export class PlayerController {
 
   // Physics & movement state
   public readonly position = new THREE.Vector3(
-    -1.65,
-    groundHeightAt(-1.65, 2.85),
-    2.85,
+    0.35,
+    groundHeightAt(0.35, 0.35),
+    0.35,
   );
   public readonly velocity = new THREE.Vector3();
   private verticalVelocity = 0;
@@ -33,7 +33,7 @@ export class PlayerController {
   private jumpBufferTimer = 0;
   private gaitTime = 0;
   private idleTime = 0;
-  private facingYaw = 2.6; // Facing toward EMBER at (0, 0, 0) initially
+  public facingYaw = -1.25; // Facing West-Northwest toward EMBER & Wooden Bridge initially
 
   // Camera state
   public cameraYaw = -0.08;
@@ -859,7 +859,7 @@ export class PlayerController {
   }
 
   public update(dt: number, camera: THREE.Camera): void {
-    const clampedDt = Math.min(dt, 0.05);
+    const clampedDt = Math.min(dt, 0.12);
 
     // Collect movement intent from keyboard + virtual joystick
     let inputX = this.joystickVector.x;

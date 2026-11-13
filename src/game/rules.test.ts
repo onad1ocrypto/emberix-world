@@ -17,6 +17,7 @@ import {
   canClaimDailyReward,
   claimDailyReward,
   clampToIslandBounds,
+  getIslandZoneLabel,
   groundHeightAt,
   ISLAND_ROCKS,
   ISLAND_TREES,
@@ -28,6 +29,7 @@ import {
   riverCenterXAt,
   terrainHeightAt,
   WATER_SURFACE_Y,
+  worldToMinimapPoint,
 } from './rules';
 
 test('pet interactions update stats, XP, levels, and achievements accurately', () => {
@@ -360,5 +362,37 @@ test('multi-language settings (en, id, zh), custom pet naming in profile, and se
   assert.equal(afterProg.playerXp, beforePlayerXp + 15);
   assert.equal(afterProg.creatureXp, beforePetXp + 20);
 });
+
+test('real-time radar minimap coordinate mapping and zone labels track player position accurately', () => {
+  // Center of Sunstone Sanctuary (0, 0) maps to radar center (50, 50)
+  const centerPt = worldToMinimapPoint(0, 0);
+  assert.equal(centerPt.x, 50);
+  assert.equal(centerPt.y, 50);
+  assert.equal(centerPt.clamped, false);
+  assert.equal(getIslandZoneLabel(0, 0), 'Sunstone Sanctuary');
+
+  // Wooden Bridge at (-6.2, 0) maps west of center and identifies as Wooden Bridge
+  const bridgePt = worldToMinimapPoint(-6.2, 0);
+  assert.ok(bridgePt.x < 42, `Bridge x (${bridgePt.x}) must be west of center`);
+  assert.equal(bridgePt.y, 50);
+  assert.equal(getIslandZoneLabel(-6.2, 0), 'Wooden Bridge');
+
+  // Pet Sanctuary House at (4.95, -7.6) maps northeast of center
+  const housePt = worldToMinimapPoint(4.95, -7.6);
+  assert.ok(housePt.x > 55 && housePt.y < 42);
+  assert.equal(getIslandZoneLabel(4.95, -7.6), 'Pet Sanctuary House');
+
+  // West Meadow beyond the river at (-12, 2)
+  const westPt = worldToMinimapPoint(-12, 2);
+  assert.ok(westPt.x < bridgePt.x);
+  assert.equal(getIslandZoneLabel(-12, 2), 'West Meadow & Gardens');
+
+  // Outer shoreline clamping preserves direction while staying inside radar ring (r <= 41.5)
+  const outerPt = worldToMinimapPoint(36, 0);
+  assert.equal(outerPt.clamped, true);
+  assert.equal(outerPt.x, 91.5);
+  assert.equal(outerPt.y, 50);
+});
+
 
 

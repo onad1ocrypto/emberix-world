@@ -15,6 +15,10 @@ import type { SoundManager } from '../audio/SoundManager';
 import {
   calculateLevelFromXp,
   canClaimDailyReward,
+  getIslandZoneLabel,
+  ISLAND_TREES,
+  riverCenterXAt,
+  worldToMinimapPoint,
 } from '../game/rules';
 import {
   getTranslation,
@@ -205,7 +209,10 @@ export class GameUI {
     this.world.setMode(nextMode);
     if (nextMode === 'playing') {
       this.sound.startAmbience();
-      if (document.activeElement instanceof HTMLElement) {
+      if (
+        document.activeElement instanceof HTMLElement &&
+        document.activeElement !== document.body
+      ) {
         document.activeElement.blur();
       }
     } else if (nextMode === 'selfie') {
@@ -213,6 +220,10 @@ export class GameUI {
     }
 
     this.render();
+
+    if (nextMode === 'playing') {
+      this.world.updateLiveMinimap();
+    }
 
     if (nextMode === 'selfie') {
       // Render initial live preview onto the portrait canvas
@@ -699,26 +710,221 @@ export class GameUI {
   }
 
   /**
-   * Renders the Circular Fantasy Island Minimap Radar (Reference Panel 2 top-right).
+   * Renders the Real-Time Topographic Fantasy Island Minimap Radar.
+   * Accurately maps the 3D river curve, bridge, sanctuary, keeper cottage, castle,
+   * crystal spires, trees, camera FOV cone, companion pet dot, breadcrumb trail,
+   * and directional player marker from live 3D world coordinates.
    */
   private renderMinimapSVG(): string {
+    const playerPos = this.world.player.position;
+    const emberPos = this.world.emberPosition;
+    const pPt = worldToMinimapPoint(playerPos.x, playerPos.z);
+    const ePt = worldToMinimapPoint(emberPos.x, emberPos.z);
+    const facingDeg = Number(
+      (-this.world.player.facingYaw * (180 / Math.PI)).toFixed(1),
+    );
+    const camFovDeg = Number(
+      (-this.world.player.cameraYaw * (180 / Math.PI)).toFixed(1),
+    );
+
+    // Build accurate river polyline from riverCenterXAt(z)
+    const riverPts: string[] = [];
+    for (let z = -21; z <= 27; z += 1.5) {
+      const pt = worldToMinimapPoint(riverCenterXAt(z), z);
+      riverPts.push(`${pt.x},${pt.y}`);
+    }
+    const riverPolyline = riverPts.join(' ');
+
+    // Exact 3D landmark positions mapped to radar SVG coordinates
+    const lagoonPt = worldToMinimapPoint(-6.2, -18.0);
+    const castlePt = worldToMinimapPoint(-1.0, -22.2);
+    const cottagePt = worldToMinimapPoint(4.95, -7.6);
+    const orchardPt = worldToMinimapPoint(7.5, -4.5);
+    const sanctuaryPt = worldToMinimapPoint(0, 0);
+    const nest1Pt = worldToMinimapPoint(3.35, 0.45);
+    const nest2Pt = worldToMinimapPoint(5.6, 5.8);
+    const crystal1Pt = worldToMinimapPoint(-2.4, -3.2);
+    const crystal2Pt = worldToMinimapPoint(-13.5, 3.5);
+    const crystal3Pt = worldToMinimapPoint(12.2, -1.8);
+    const westGardenPt = worldToMinimapPoint(-11.2, -1.5);
+    const bridgeWest = worldToMinimapPoint(-9.8, 0);
+    const bridgeEast = worldToMinimapPoint(-2.6, 0);
+    const bridgeW = Math.max(8, Number((bridgeEast.x - bridgeWest.x).toFixed(2)));
+
+    // Plot real island trees inside radar radius
+    const treeCircles = ISLAND_TREES.filter(
+      (t) => Math.hypot(t.x, t.z) <= 23.5,
+    )
+      .slice(0, 28)
+      .map((t) => {
+        const tp = worldToMinimapPoint(t.x, t.z);
+        return `<circle cx="${tp.x}" cy="${tp.y}" r="1.55" fill="#15803D" opacity="0.78" />`;
+      })
+      .join('');
+
+    const zoom = this.world.minimapZoom;
+    const worldTransform =
+      zoom > 1
+        ? `translate(50, 50) scale(${zoom}) translate(${-pPt.x}, ${-pPt.y})`
+        : 'translate(0, 0) scale(1)';
+
     return `
-      <svg viewBox="0 0 100 100" class="minimap-radar-svg" aria-label="Solara Island Minimap">
+      <svg viewBox="0 0 100 100" class="minimap-radar-svg" aria-label="Solara Island Live Radar Map">
         <defs>
-          <radialGradient id="mapOcean" cx="50%" cy="50%" r="50%">
-            <stop offset="70%" stop-color="#22C55E" />
-            <stop offset="88%" stop-color="#86EFAC" />
-            <stop offset="100%" stop-color="#0EA5E9" />
+          <clipPath id="minimapClip">
+            <circle cx="50" cy="50" r="44.2" />
+          </clipPath>
+          <radialGradient id="mapIslandGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1E5631" />
+            <stop offset="68%" stop-color="#166534" />
+            <stop offset="84%" stop-color="#4ADE80" />
+            <stop offset="91%" stop-color="#FDE047" />
+            <stop offset="100%" stop-color="#0284C7" />
           </radialGradient>
+          <linearGradient id="fovConeGrad" x1="50%" y1="100%" x2="50%" y2="0%">
+            <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.48" />
+            <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.0" />
+          </linearGradient>
         </defs>
-        <circle cx="50" cy="50" r="46" fill="url(#mapOcean)" stroke="#FBBF24" stroke-width="3.5" />
-        <path d="M 36,6 Q 44,30 34,50 Q 26,72 38,94" stroke="#38BDF8" stroke-width="8" fill="none" />
-        <rect x="28" y="46" width="16" height="7" rx="2" fill="#B45309" stroke="#FEF08A" stroke-width="1" />
-        <polygon points="48,14 54,22 42,22" fill="#E11D48" />
-        <rect x="44" y="22" width="8" height="6" fill="#FEF3C7" />
-        <circle cx="52" cy="50" r="7" fill="#94A3B8" stroke="#FBBF24" stroke-width="1.5" />
-        <circle cx="52" cy="50" r="3.8" fill="#FF5722" stroke="#FFFFFF" stroke-width="1.2" id="minimap-ember-dot" />
-        <polygon points="50,55 54,63 46,63" fill="#FDE047" stroke="#1E1B4B" stroke-width="1" id="minimap-player-dot" />
+
+        <!-- Radar Outer Bezel & Ocean Base -->
+        <circle cx="50" cy="50" r="46" fill="#082F49" stroke="#FBBF24" stroke-width="2.8" />
+
+        <!-- Clipped World & Live Entity Layer -->
+        <g clip-path="url(#minimapClip)">
+          <g id="minimap-world-layer" transform="${worldTransform}">
+            <!-- Island Coastline & Emerald Terrain -->
+            <circle cx="50" cy="50" r="43.5" fill="url(#mapIslandGrad)" />
+
+            <!-- Topographic Radar Grid Rings & Axes -->
+            <circle cx="50" cy="50" r="16.2" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="0.6" stroke-dasharray="2 2" />
+            <circle cx="50" cy="50" r="32.4" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="0.6" stroke-dasharray="2 2" />
+            <line x1="50" y1="6" x2="50" y2="94" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
+            <line x1="6" y1="50" x2="94" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" />
+
+            <!-- Northern Waterfall Plunge Pool & Winding River -->
+            <ellipse cx="${lagoonPt.x}" cy="${lagoonPt.y}" rx="6.8" ry="4.8" fill="#0EA5E9" stroke="#7DD3FC" stroke-width="0.8" />
+            <polyline points="${riverPolyline}" fill="none" stroke="#0284C7" stroke-width="7.4" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="${riverPolyline}" fill="none" stroke="#38BDF8" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- Real Island Trees -->
+            ${treeCircles}
+
+            <!-- West Meadow Flower Garden -->
+            <circle cx="${westGardenPt.x}" cy="${westGardenPt.y}" r="2.8" fill="#F472B6" opacity="0.75" />
+
+            <!-- Wooden Bridge at z = 0 spanning the river -->
+            <rect
+              x="${bridgeWest.x}"
+              y="${(bridgeWest.y - 2.6).toFixed(2)}"
+              width="${bridgeW}"
+              height="5.2"
+              rx="1.4"
+              fill="#B45309"
+              stroke="#FDE047"
+              stroke-width="1"
+            />
+
+            <!-- Central Sunstone Sanctuary Spawn Pad (0, 0) -->
+            <circle cx="${sanctuaryPt.x}" cy="${sanctuaryPt.y}" r="4.2" fill="rgba(251, 191, 36, 0.25)" stroke="#FBBF24" stroke-width="1.1" />
+            <circle cx="${sanctuaryPt.x}" cy="${sanctuaryPt.y}" r="1.4" fill="#FDE047" />
+
+            <!-- Cozy Dragon Sleep Beds -->
+            <circle cx="${nest1Pt.x}" cy="${nest1Pt.y}" r="2.0" fill="#FB7185" stroke="#FFF1F2" stroke-width="0.7" />
+            <circle cx="${nest2Pt.x}" cy="${nest2Pt.y}" r="1.9" fill="#FB7185" stroke="#FFF1F2" stroke-width="0.7" />
+
+            <!-- Sunberry Orchard Bush -->
+            <circle cx="${orchardPt.x}" cy="${orchardPt.y}" r="2.3" fill="#22C55E" stroke="#EF4444" stroke-width="0.9" />
+
+            <!-- Mana Crystal Spires -->
+            <polygon points="${crystal1Pt.x},${crystal1Pt.y - 2.2} ${crystal1Pt.x + 1.8},${crystal1Pt.y} ${crystal1Pt.x},${crystal1Pt.y + 2.2} ${crystal1Pt.x - 1.8},${crystal1Pt.y}" fill="#38BDF8" stroke="#E0F2FE" stroke-width="0.5" />
+            <polygon points="${crystal2Pt.x},${crystal2Pt.y - 2.0} ${crystal2Pt.x + 1.6},${crystal2Pt.y} ${crystal2Pt.x},${crystal2Pt.y + 2.0} ${crystal2Pt.x - 1.6},${crystal2Pt.y}" fill="#38BDF8" stroke="#E0F2FE" stroke-width="0.5" />
+            <polygon points="${crystal3Pt.x},${crystal3Pt.y - 2.0} ${crystal3Pt.x + 1.6},${crystal3Pt.y} ${crystal3Pt.x},${crystal3Pt.y + 2.0} ${crystal3Pt.x - 1.6},${crystal3Pt.y}" fill="#38BDF8" stroke="#E0F2FE" stroke-width="0.5" />
+
+            <!-- Pet Sanctuary House (Keeper Cottage) -->
+            <g transform="translate(${cottagePt.x}, ${cottagePt.y})">
+              <rect x="-3.4" y="-1.2" width="6.8" height="4.4" rx="0.8" fill="#FEF3C7" stroke="#78350F" stroke-width="0.6" />
+              <polygon points="0,-4.5 4.4,-1.0 -4.4,-1.0" fill="#E11D48" stroke="#FFE4E6" stroke-width="0.6" />
+              <text x="0" y="6.2" text-anchor="middle" fill="#FEF08A" font-size="3.1" font-weight="900" font-family="sans-serif" stroke="#0F172A" stroke-width="0.35" paint-order="stroke">HOME</text>
+            </g>
+
+            <!-- Northern Solara Fantasy Castle -->
+            <g transform="translate(${castlePt.x}, ${castlePt.y})">
+              <rect x="-4.5" y="-2.2" width="9.0" height="4.8" rx="0.8" fill="#C084FC" stroke="#FDE047" stroke-width="0.7" />
+              <polygon points="0,-5.4 3.5,-2.2 -3.5,-2.2" fill="#9333EA" stroke="#FDE047" stroke-width="0.6" />
+              <text x="0" y="5.8" text-anchor="middle" fill="#F3E8FF" font-size="3.1" font-weight="900" font-family="sans-serif" stroke="#0F172A" stroke-width="0.35" paint-order="stroke">CASTLE</text>
+            </g>
+
+            <!-- Bridge & Nest Micro-Labels -->
+            <text x="${(bridgeWest.x + bridgeW / 2).toFixed(1)}" y="${(bridgeWest.y - 3.6).toFixed(1)}" text-anchor="middle" fill="#FDE047" font-size="2.9" font-weight="900" font-family="sans-serif" stroke="#0F172A" stroke-width="0.35" paint-order="stroke">BRIDGE</text>
+            <text x="${nest1Pt.x}" y="${(nest1Pt.y + 4.8).toFixed(1)}" text-anchor="middle" fill="#FECDD3" font-size="2.8" font-weight="900" font-family="sans-serif" stroke="#0F172A" stroke-width="0.35" paint-order="stroke">NEST</text>
+
+            <!-- Real-Time Player Footstep Breadcrumb Trail -->
+            <polyline
+              id="minimap-player-trail"
+              points="${pPt.x},${pPt.y}"
+              fill="none"
+              stroke="#FDE047"
+              stroke-width="1.3"
+              stroke-dasharray="1.8 1.4"
+              stroke-linecap="round"
+              opacity="0.82"
+            />
+
+            <!-- Real-Time Camera Viewing Cone (FOV) -->
+            <g id="minimap-cam-fov" transform="translate(${pPt.x}, ${pPt.y}) rotate(${camFovDeg})">
+              <path d="M 0,0 L -9.5,-19 A 21,21 0 0,1 9.5,-19 Z" fill="url(#fovConeGrad)" />
+            </g>
+
+            <!-- Real-Time Companion Pet Marker (EMBER) -->
+            <circle
+              id="minimap-ember-halo"
+              cx="${ePt.x}"
+              cy="${ePt.y}"
+              r="4.8"
+              fill="rgba(255, 87, 34, 0.32)"
+            />
+            <circle
+              id="minimap-ember-dot"
+              cx="${ePt.x}"
+              cy="${ePt.y}"
+              r="2.9"
+              fill="#FF5722"
+              stroke="#FFFFFF"
+              stroke-width="1.1"
+              data-world-x="${emberPos.x.toFixed(2)}"
+              data-world-z="${emberPos.z.toFixed(2)}"
+            />
+
+            <!-- Real-Time Player Position & Facing Direction Arrow -->
+            <g
+              id="minimap-player-marker"
+              transform="translate(${pPt.x}, ${pPt.y}) rotate(${facingDeg})"
+              data-world-x="${playerPos.x.toFixed(2)}"
+              data-world-z="${playerPos.z.toFixed(2)}"
+              data-map-x="${pPt.x}"
+              data-map-y="${pPt.y}"
+              data-facing-deg="${facingDeg}"
+            >
+              <circle cx="0" cy="0" r="5.4" fill="rgba(56, 189, 248, 0.28)" />
+              <polygon
+                id="minimap-player-dot"
+                points="0,4.8 -3.6,-3.8 0,-1.8 3.6,-3.8"
+                fill="#38BDF8"
+                stroke="#FFFFFF"
+                stroke-width="1.2"
+                stroke-linejoin="round"
+              />
+              <circle cx="0" cy="0.4" r="1.2" fill="#FDE047" />
+            </g>
+          </g>
+        </g>
+
+        <!-- Compass Cardinal Labels on Bezel -->
+        <text x="50" y="9.5" text-anchor="middle" fill="#FDE047" font-size="6.8" font-weight="900" font-family="sans-serif">N</text>
+        <text x="91.5" y="52.2" text-anchor="middle" fill="#E2E8F0" font-size="5.8" font-weight="800" font-family="sans-serif">E</text>
+        <text x="50" y="94.5" text-anchor="middle" fill="#E2E8F0" font-size="5.8" font-weight="800" font-family="sans-serif">S</text>
+        <text x="8.5" y="52.2" text-anchor="middle" fill="#E2E8F0" font-size="5.8" font-weight="800" font-family="sans-serif">W</text>
       </svg>
     `;
   }
@@ -818,8 +1024,21 @@ export class GameUI {
             </button>
           </div>
 
-          <div class="minimap-container" title="Solara Island Radar">
-            ${this.renderMinimapSVG()}
+          <div class="minimap-hud-cluster">
+            <button
+              type="button"
+              class="minimap-container"
+              id="btn-minimap-zoom"
+              title="Click to toggle Radar Zoom (1x Island / 2x Follow)"
+              aria-label="Solara Island Live Radar — Click to toggle zoom"
+            >
+              ${this.renderMinimapSVG()}
+              <span class="minimap-zoom-chip" id="minimap-zoom-badge">${this.world.minimapZoom > 1 ? 'LIVE' : 'MAP'}</span>
+            </button>
+            <div class="minimap-live-readout" id="minimap-live-readout" aria-live="off">
+              <span class="minimap-zone-name" id="minimap-zone-label">${getIslandZoneLabel(this.world.player.position.x, this.world.player.position.z)}</span>
+              <span class="minimap-coords-text tabular-nums" id="minimap-coords-label">X: ${this.world.player.position.x.toFixed(1)} · Z: ${this.world.player.position.z.toFixed(1)}</span>
+            </div>
           </div>
         </nav>
 
@@ -2442,6 +2661,13 @@ export class GameUI {
         this.sound.playClick();
         this.world.toggleCloseUpCareMode();
         this.render();
+      });
+    this.root
+      .querySelector('#btn-minimap-zoom')
+      ?.addEventListener('click', (e) => {
+        (e.currentTarget as HTMLElement).blur();
+        this.sound.playClick();
+        this.world.toggleMinimapZoom();
       });
     this.root
       .querySelector('#hud-btn-settings')

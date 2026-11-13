@@ -2,9 +2,11 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EmberModel } from '../creatures/EmberModel';
 import {
+  getIslandZoneLabel,
   groundHeightAt,
   resolveIslandMovement,
   riverCenterXAt,
+  worldToMinimapPoint,
 } from '../game/rules';
 import type {
   AppMode,
@@ -52,10 +54,15 @@ export class IslandWorldEngine {
   private mode: AppMode = 'title';
   private paused = false;
   private frameId = 0;
+  private simIntervalId = 0;
   private lastTime = 0;
+  private lastSimTime = 0;
   private titleOrbitAngle = 0;
   public closeUpMode = false;
   public selfiePose: SelfiePoseId = 'wave';
+  public minimapZoom = 1.75;
+  private minimapTrail: Array<{ x: number; y: number; wx: number; wz: number }> =
+    [];
 
   // Companion follow state for EMBER
   public readonly emberPosition = new THREE.Vector3(0, groundHeightAt(0, 0), 0);
@@ -63,7 +70,7 @@ export class IslandWorldEngine {
   private isSleeping = false;
 
   // Saved pre-selfie positions so returning to 'playing' restores smooth exploration
-  private savedPlayerPos = new THREE.Vector3(-1.65, groundHeightAt(-1.65, 2.85), 2.85);
+  private savedPlayerPos = new THREE.Vector3(-0.4, groundHeightAt(-0.4, 3.1), 3.1);
   private hasSavedSelfiePos = false;
 
   // Raycasting for clicking directly on 3D EMBER or Island Interactive Zones
@@ -735,6 +742,7 @@ export class IslandWorldEngine {
         targetZ + Math.cos(this.player.cameraYaw) * horizDist,
       );
       this.camera.lookAt(targetX, targetY, targetZ);
+      this.updateLiveMinimap();
     } else if (mode !== 'playing' && mode !== 'ar') {
       this.applyTitleCameraFraming(true);
     }
@@ -927,41 +935,202 @@ export class IslandWorldEngine {
     }
   }
 
+  public toggleMinimapZoom(): void {
+    this.minimapZoom = this.minimapZoom > 1 ? 1 : 1.75;
+    this.updateLiveMinimap();
+  }
+
+  /**
+   * Synchronizes the HUD Radar Minimap SVG & coordinate telemetry in real time
+   * with the player's live 3D position, facing yaw, camera yaw, breadcrumb trail,
+   * and companion pet position.
+   */
+  public updateLiveMinimap(): void {
+    if (typeof document === 'undefined') return;
+    const playerMarker = document.getElementById('minimap-player-marker');
+    if (!playerMarker) return;
+
+    const px = this.player.position.x;
+    const pz = this.player.position.z;
+    const ex = this.emberPosition.x;
+    const ez = this.emberPosition.z;
+
+    const pPt = worldToMinimapPoint(px, pz);
+    const ePt = worldToMinimapPoint(ex, ez);
+    const facingDeg = Number(
+      (-this.player.facingYaw * (180 / Math.PI)).toFixed(1),
+    );
+    const camFovDeg = Number(
+      (-this.player.cameraYaw * (180 / Math.PI)).toFixed(1),
+    );
+
+    // Record breadcrumb trail point when player moves >= 0.85m
+    const lastTrail = this.minimapTrail[this.minimapTrail.length - 1];
+    if (
+      !lastTrail ||
+      Math.hypot(px - lastTrail.wx, pz - lastTrail.wz) >= 0.85
+    ) {
+      this.minimapTrail.push({ x: pPt.x, y: pPt.y, wx: px, wz: pz });
+      if (this.minimapTrail.length > 22) {
+        this.minimapTrail.shift();
+      }
+    }
+
+    // Update player marker position & facing arrow rotation
+    playerMarker.setAttribute(
+      'transform',
+      `translate(${pPt.x}, ${pPt.y}) rotate(${facingDeg})`,
+    );
+    playerMarker.setAttribute('data-world-x', px.toFixed(2));
+    playerMarker.setAttribute('data-world-z', pz.toFixed(2));
+    playerMarker.setAttribute('data-map-x', String(pPt.x));
+    playerMarker.setAttribute('data-map-y', String(pPt.y));
+    playerMarker.setAttribute('data-facing-deg', String(facingDeg));
+
+    // Update camera FOV cone position & rotation
+    const camFov = document.getElementById('minimap-cam-fov');
+    if (camFov) {
+      camFov.setAttribute(
+        'transform',
+        `translate(${pPt.x}, ${pPt.y}) rotate(${camFovDeg})`,
+      );
+    }
+
+    // Update companion pet dot & halo
+    const emberDot = document.getElementById('minimap-ember-dot');
+    if (emberDot) {
+      emberDot.setAttribute('cx', String(ePt.x));
+      emberDot.setAttribute('cy', String(ePt.y));
+      emberDot.setAttribute('data-world-x', ex.toFixed(2));
+      emberDot.setAttribute('data-world-z', ez.toFixed(2));
+    }
+    const emberHalo = document.getElementById('minimap-ember-halo');
+    if (emberHalo) {
+      emberHalo.setAttribute('cx', String(ePt.x));
+      emberHalo.setAttribute('cy', String(ePt.y));
+    }
+
+    // Update player footstep breadcrumb trail
+    const trailEl = document.getElementById('minimap-player-trail');
+    if (trailEl) {
+      const pts = [
+        ...this.minimapTrail.map((t) => `${t.x},${t.y}`),
+        `${pPt.x},${pPt.y}`,
+      ].join(' ');
+      trailEl.setAttribute('points', pts);
+    }
+
+    // Update world layer transform (1x full island vs 1.85x player-centered zoom)
+    const worldLayer = document.getElementById('minimap-world-layer');
+    if (worldLayer) {
+      const worldTransform =
+        this.minimapZoom > 1
+          ? `translate(50, 50) scale(${this.minimapZoom}) translate(${-pPt.x}, ${-pPt.y})`
+          : 'translate(0, 0) scale(1)';
+      worldLayer.setAttribute('transform', worldTransform);
+    }
+
+    // Update live zone & coordinate telemetry readout
+    const zoneLabelEl = document.getElementById('minimap-zone-label');
+    if (zoneLabelEl) {
+      const nextZone = getIslandZoneLabel(px, pz);
+      if (zoneLabelEl.textContent !== nextZone) {
+        zoneLabelEl.textContent = nextZone;
+      }
+    }
+
+    const coordsLabelEl = document.getElementById('minimap-coords-label');
+    if (coordsLabelEl) {
+      const nextCoords = `X: ${px.toFixed(1)} · Z: ${pz.toFixed(1)}`;
+      if (coordsLabelEl.textContent !== nextCoords) {
+        coordsLabelEl.textContent = nextCoords;
+      }
+    }
+
+    const zoomBadgeEl = document.getElementById('minimap-zoom-badge');
+    if (zoomBadgeEl) {
+      const nextZoomText = this.minimapZoom > 1 ? 'LIVE' : 'MAP';
+      if (zoomBadgeEl.textContent !== nextZoomText) {
+        zoomBadgeEl.textContent = nextZoomText;
+      }
+    }
+  }
+
   private afterDraw(cb: () => void): void {
     const gl = this.renderer.getContext() as WebGL2RenderingContext | null;
     if (!gl || typeof gl.fenceSync !== 'function') {
-      this.frameId = window.setTimeout(cb, 80);
+      this.frameId = window.setTimeout(cb, 220);
       return;
     }
     const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     gl.flush();
+    let polls = 0;
     const poll = () => {
-      if (this.paused) return;
-      const state = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
-      if (state === gl.UNSIGNALED) {
-        this.frameId = window.setTimeout(poll, 5);
+      if (this.paused) {
+        if (sync) gl.deleteSync(sync);
+        return;
+      }
+      polls++;
+      const waitRes = sync
+        ? gl.clientWaitSync(sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0)
+        : gl.ALREADY_SIGNALED;
+      if (waitRes === gl.TIMEOUT_EXPIRED && polls < 60) {
+        this.frameId = window.setTimeout(poll, 10);
       } else {
         if (sync) gl.deleteSync(sync);
-        this.frameId = window.setTimeout(cb, 80);
+        const delayMs = this.mode === 'playing' ? 180 : 500;
+        this.frameId = window.setTimeout(cb, delayMs);
       }
     };
-    this.frameId = window.setTimeout(poll, 5);
+    this.frameId = window.setTimeout(poll, 10);
+  }
+
+  /**
+   * Steps gameplay physics, companion AI, interactive zone detection, and the
+   * real-time HUD radar minimap using wall-clock delta time.
+   */
+  public stepSimulation(): void {
+    if (this.paused) return;
+    const now = performance.now();
+    const elapsedMs = now - this.lastSimTime;
+    if (elapsedMs < 4) return;
+    const simDt = Math.min(elapsedMs / 1000, 0.12);
+    this.lastSimTime = now;
+
+    if (this.mode === 'playing') {
+      if (!this.closeUpMode) {
+        this.player.update(simDt, this.camera);
+      }
+      this.updateCompanionAI(simDt);
+      this.checkInteractiveZones();
+      this.updateLiveMinimap();
+    } else {
+      this.updateCompanionAI(simDt);
+    }
   }
 
   private startLoop(): void {
-    this.lastTime = performance.now();
+    const now = performance.now();
+    this.lastTime = now;
+    this.lastSimTime = now;
+
+    if (this.simIntervalId === 0) {
+      this.simIntervalId = window.setInterval(() => {
+        this.stepSimulation();
+      }, 33);
+    }
 
     const tick = () => {
       if (this.paused) {
         this.frameId = 0;
         return;
       }
-      const now = performance.now();
-      const dt = Math.min((now - this.lastTime) / 1000, 0.05);
-      this.lastTime = now;
+      const tickNow = performance.now();
+      const dt = Math.min((tickNow - this.lastTime) / 1000, 0.12);
+      this.lastTime = tickNow;
 
+      this.stepSimulation();
       this.island.update(dt);
-      this.updateCompanionAI(dt);
       this.ember.update(dt);
 
       if (this.mode === 'selfie') {
@@ -985,10 +1154,7 @@ export class IslandWorldEngine {
             1 - Math.exp(-8 * dt),
           );
           this.camera.lookAt(this._closeUpLookAt);
-        } else {
-          this.player.update(dt, this.camera);
         }
-        this.checkInteractiveZones();
       } else {
         this.titleOrbitAngle += dt * 0.35;
         this.applyTitleCameraFraming(false, dt);
@@ -1012,6 +1178,10 @@ export class IslandWorldEngine {
 
   public dispose(): void {
     this.paused = true;
+    if (this.simIntervalId) {
+      clearInterval(this.simIntervalId);
+      this.simIntervalId = 0;
+    }
     if (this.frameId) {
       cancelAnimationFrame(this.frameId);
       clearTimeout(this.frameId);
