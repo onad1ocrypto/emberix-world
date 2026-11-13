@@ -1,0 +1,15 @@
+{
+  "targetId": "ember-fire-dragon-001",
+  "width": 1024,
+  "height": 1024,
+  "physicalSizeCm": 15,
+  "colorSignature": {
+    "meanR": 129,
+    "meanG": 79,
+    "meanB": 54
+  },
+  "featureCount256": 220,
+  "featureCount128": 140,
+  "mindFileSizeBytes": 125388,
+  "pngFileSizeBytes": 2713641
+}
