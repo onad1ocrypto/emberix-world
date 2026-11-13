@@ -236,35 +236,14 @@ export class GameUI {
     }
   }
 
-  public requireAuthOrRun(targetMode: 'playing' | 'ar'): void {
-    const currentUser = storageManager.getCurrentUser();
-    if (!currentUser) {
-      this.sound.playClick();
-      this.pendingPlayModeAfterAuth = targetMode;
-      this.authTab =
-        storageManager.getRegisteredAccounts().length > 0
-          ? 'login'
-          : 'register';
-      const t = getTranslation(storageManager.getState().settings.language);
-      this.authFeedback = {
-        type: 'error',
-        message: t.account.mustRegisterBeforePlay,
-      };
-      this.draftPetName = storageManager.getPetName();
-      this.setMode('account');
-      return;
-    }
-    this.pendingPlayModeAfterAuth = null;
-    this.sound.playClick();
-    this.setMode(targetMode);
-  }
-
   public start3DWorld(): void {
-    this.requireAuthOrRun('playing');
+    this.sound.playClick();
+    this.setMode('playing');
   }
 
   public startARWorld(): void {
-    this.requireAuthOrRun('ar');
+    this.sound.playClick();
+    this.setMode('ar');
   }
 
   public openSelfieStudio(): void {
@@ -1784,13 +1763,7 @@ export class GameUI {
               <span>${this.authFeedback.type === 'success' ? '✨' : '⚠️'} ${this.authFeedback.message}</span>
             </div>
           `
-              : !currentUser
-                ? `
-            <div class="auth-feedback-banner auth-feedback-error" id="account-feedback-banner" role="alert">
-              <span>⚠️ ${t.account.mustRegisterBeforePlay}</span>
-            </div>
-          `
-                : ''
+              : ''
           }
 
           ${
@@ -1948,10 +1921,10 @@ export class GameUI {
           `
               : `
             <!-- ==========================================================
-                 UNREGISTERED / LOGGED-OUT VIEW (Register & Login Gate)
+                 GUEST KEEPER MODE VIEW (Passport + Pet Name + Optional Register/Login)
                  ========================================================== -->
             <div class="account-modal-grid">
-              <!-- Left Column: Unregistered Passport Preview + Existing Saved Accounts -->
+              <!-- Left Column: Guest Keeper Passport + Custom Pet Name Editor + Saved Accounts -->
               <div class="account-left-col">
                 <div class="keeper-id-card">
                   <div class="keeper-id-header">
@@ -1969,28 +1942,59 @@ export class GameUI {
                   <div class="keeper-id-stats-row">
                     <div class="keeper-stat-box">
                       <span>Player Lv.</span>
-                      <strong class="tabular-nums">Lv.${playerLvl.level}</strong>
+                      <strong class="tabular-nums">Lv.${playerLvl.level} (${progression.playerXp} XP)</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span id="passport-pet-name-label">${petName} Lv.</span>
-                      <strong class="tabular-nums">Lv.${creatureLvl.level}</strong>
+                      <strong class="tabular-nums">Lv.${creatureLvl.level} (${progression.creatureXp} XP)</strong>
                     </div>
                     <div class="keeper-stat-box">
-                      <span>Bonus XP</span>
-                      <strong class="tabular-nums">+50 XP</strong>
+                      <span>Friendship</span>
+                      <strong class="tabular-nums">${stats.friendship}%</strong>
                     </div>
                     <div class="keeper-stat-box">
-                      <span>Auto-Save</span>
-                      <strong class="tabular-nums">ON</strong>
+                      <span>Achievements</span>
+                      <strong class="tabular-nums">${progression.unlockedAchievements.length}/${ACHIEVEMENTS.length}</strong>
                     </div>
                   </div>
+                  <div class="keeper-id-actions">
+                    <button type="button" class="btn-primary-cta btn-sm" id="btn-account-play-now">
+                      <span>🎮 ${t.account.continueAs} ${t.menu.guestKeeper}</span>
+                    </button>
+                  </div>
                 </div>
+
+                <!-- Custom Pet Name Editor Box (Accessible in Guest Mode too!) -->
+                <form id="form-pet-name" class="pet-name-editor-box" novalidate>
+                  <div class="pet-name-editor-header">
+                    <span class="pet-name-icon">🐉</span>
+                    <div>
+                      <h3 class="section-heading">${t.account.petNameSectionTitle}</h3>
+                      <p class="body-copy">${t.account.petNameSectionDesc}</p>
+                    </div>
+                  </div>
+                  <div class="pet-name-input-row">
+                    <input
+                      id="input-pet-name"
+                      type="text"
+                      class="auth-input"
+                      maxlength="20"
+                      placeholder="${t.account.petNamePlaceholder}"
+                      value="${this.draftPetName || petName}"
+                      aria-label="${t.account.petNameInputLabel}"
+                      required
+                    />
+                    <button type="submit" class="btn-secondary-gold btn-sm" id="btn-save-pet-name">
+                      <span>${t.account.petNameSaveBtn}</span>
+                    </button>
+                  </div>
+                </form>
 
                 <div class="saved-accounts-box">
                   <h3 class="section-heading">${t.account.savedAccountsHeading} (${accounts.length})</h3>
                   ${
                     accounts.length === 0
-                      ? `<p class="body-copy">No registered accounts yet. Register your Keeper account on the right to save your XP and claim your <strong>+50 XP Bonus</strong>!</p>`
+                      ? `<p class="body-copy">Playing in Guest Mode. Register a Keeper account on the right anytime to bind your progress and claim a <strong>+50 XP Bonus</strong>!</p>`
                       : `
                     <div class="saved-accounts-list">
                       ${accounts
@@ -2352,10 +2356,6 @@ export class GameUI {
     this.root
       .querySelector('#btn-claim-daily')
       ?.addEventListener('click', () => {
-        if (!storageManager.getCurrentUser()) {
-          this.requireAuthOrRun('playing');
-          return;
-        }
         const res = storageManager.claimDaily();
         if (res.claimed) {
           this.sound.playLevelUp();
@@ -3111,7 +3111,7 @@ export class GameUI {
         this.sound.playClick();
         storageManager.logoutAccount();
         this.authFeedback = {
-          type: 'error',
+          type: 'success',
           message: t.account.mustRegisterBeforePlay,
         };
         this.render();

@@ -164,9 +164,9 @@ export interface TranslationPack {
 export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
   en: {
     menu: {
-      guestKeeper: 'Unregistered',
+      guestKeeper: 'Guest Keeper',
       accountBadge: '✓ Profile',
-      registerLogin: 'Register / Login',
+      registerLogin: 'Profile / Login',
       playerPrefix: 'Player',
       play3dWorld: 'Play 3D World',
       enterArWorld: 'Enter AR World',
@@ -275,10 +275,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
         'Manage your Keeper Passport, customize your Pet Name, and save account progress',
       passportTitle: 'SOLARA KEEPER PASSPORT',
       loggedIn: '✓ LOGGED IN',
-      guestMode: 'NOT REGISTERED',
-      unregisteredExplorer: 'Unregistered Explorer',
+      guestMode: 'GUEST MODE',
+      unregisteredExplorer: 'Solara Explorer',
       mustRegisterBeforePlay:
-        'Please register or log in first before playing so your XP, Level, and Pet progress are saved!',
+        'Playing in Guest Mode! Register or log in anytime to permanently bind your XP & claim +50 XP Bonus.',
       profileSavedBadge:
         '✓ Account Active — All XP, Levels & Pet Progress Automatically Saved',
       profileCustomizeHeading: 'Customize Keeper Avatar & Title',
@@ -308,9 +308,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
   },
   id: {
     menu: {
-      guestKeeper: 'Belum Login',
+      guestKeeper: 'Keeper Tamu',
       accountBadge: '✓ Profil',
-      registerLogin: 'Daftar / Login',
+      registerLogin: 'Profil / Login',
       playerPrefix: 'Player',
       play3dWorld: 'Main Dunia 3D',
       enterArWorld: 'Masuk Dunia AR',
@@ -419,10 +419,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
         'Kelola paspor Keeper, ubah Nama Pet kesayanganmu, dan simpan progres akun otomatis',
       passportTitle: 'PASPOR KEEPER SOLARA',
       loggedIn: '✓ SUDAH LOGIN',
-      guestMode: 'BELUM LOGIN',
-      unregisteredExplorer: 'Penjelajah Baru',
+      guestMode: 'MODE TAMU',
+      unregisteredExplorer: 'Penjelajah Solara',
       mustRegisterBeforePlay:
-        'Silakan daftar akun (Register) atau Login terlebih dahulu sebelum bermain agar XP, Level, dan progres pet kamu tersimpan!',
+        'Mode Tamu Aktif! Daftar akun atau Login kapan saja untuk menyimpan progres permanen & klaim Bonus +50 XP.',
       profileSavedBadge:
         '✓ Akun Aktif — Semua XP, Level & Progres Pet Tersimpan Otomatis',
       profileCustomizeHeading: 'Kustomisasi Avatar & Gelar Keeper',
@@ -452,9 +452,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
   },
   zh: {
     menu: {
-      guestKeeper: '未登录玩家',
+      guestKeeper: '游客驯龙师',
       accountBadge: '✓ 个人资料',
-      registerLogin: '注册 / 登录',
+      registerLogin: '资料 / 登录',
       playerPrefix: '玩家',
       play3dWorld: '畅玩 3D 世界',
       enterArWorld: '进入 AR 世界',
@@ -558,10 +558,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       subtitle: '管理您的驯龙师通行证，修改专属宠物名字并自动保存账号进度',
       passportTitle: '索拉岛驯龙师通行证',
       loggedIn: '✓ 已登录',
-      guestMode: '未注册登录',
-      unregisteredExplorer: '未注册探险家',
+      guestMode: '游客模式',
+      unregisteredExplorer: '索拉探险家',
       mustRegisterBeforePlay:
-        '开始游戏前请先注册或登录账号，以便永久保存您的 XP、等级与宠物进度！',
+        '当前为游客模式！随时注册或登录账号即可永久绑定进度并领取 +50 XP 奖励。',
       profileSavedBadge: '✓ 账号已激活 — 所有 XP、等级与宠物进度已自动保存',
       profileCustomizeHeading: '自定义玩家头像与称号',
       profileCustomizeDesc: '随时更换您的驯龙师头像与荣誉称号，将在 3D 世界和自拍卡中展示。',
