@@ -6,7 +6,28 @@
 🎥 **Demo video:** _coming soon_
 🏆 Built for **IceHacks** (November 2026)
 
+![Emberix World — title screen with EMBER the baby fire dragon](docs/screenshots/01-landing.jpg)
+
 ---
+
+## Screenshots
+
+Walk around the island with your pet, take care of it in the world it actually
+lives in — then summon it onto a card on your desk.
+
+| In the world | Creature Collection |
+|---|---|
+| ![Exploring Solara Island with EMBER](docs/screenshots/02-world.jpg) | ![Creature Collection: EMBER unlocked, AQUA, MOSS and VOLT coming soon](docs/screenshots/03-collection.jpg) |
+
+![EMBER anchored to the printed AR card](docs/screenshots/04-ar.jpg)
+
+<sub>AR mode: EMBER anchored to the printed marker card, standing on it in
+perspective and reacting to taps. The same creature, the same stats, the same
+bond you built in 3D.</sub>
+
+<img src="docs/screenshots/05-mobile.jpg" width="300" alt="Emberix World on a phone">
+
+<sub>The whole thing runs on a phone — guest mode, no sign-up.</sub>
 
 ## What this is
 
@@ -118,6 +139,7 @@ src/
 public/assets/
   images/                    Creature artwork
   ar/                        AR card art, printable PDF, compiled .mind target
+docs/screenshots/            Screenshots used in this README
 public/
   og-emberix-world.jpg       Social preview card (1200x630)
   manifest.webmanifest       Web app manifest
