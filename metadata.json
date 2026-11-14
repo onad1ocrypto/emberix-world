@@ -1,6 +1,6 @@
 {
-  "name": "XR Creature World",
-  "description": "3D virtual pet simulator and fantasy island explorer featuring EMBER the baby fire dragon, with real camera MindAR image tracking and XR Blocks spatial UI.",
+  "name": "Emberix World",
+  "description": "Emberix World is a 3D virtual pet simulator and fantasy island explorer starring EMBER the baby fire dragon, with real camera MindAR image tracking and XR Blocks spatial UI.",
   "requestFramePermissions": [
     "camera",
     "microphone"
