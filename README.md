@@ -140,6 +140,7 @@ public/assets/
   images/                    Creature artwork
   ar/                        AR card art, printable PDF, compiled .mind target
 docs/screenshots/            Screenshots used in this README
+docs/video-thumbnail.jpg     Demo video thumbnail (1280x720)
 public/
   og-emberix-world.jpg       Social preview card (1200x630)
   manifest.webmanifest       Web app manifest
