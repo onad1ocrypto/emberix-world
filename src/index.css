@@ -981,6 +981,10 @@ button:disabled {
   pointer-events: none;
 }
 
+.pet-feedback-toast.toast-hidden {
+  display: none;
+}
+
 .pet-feedback-toast {
   background-color: var(--surface-dark);
   border: 1.5px solid rgba(251, 191, 36, 0.5);

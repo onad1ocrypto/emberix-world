@@ -76,6 +76,7 @@ export class GameUI {
   private speechBubbleText = "You're awesome! ❤️";
   private speechBubbleVisible = false;
   private feedbackTimer: number | null = null;
+  private feedbackVisible = true;
   private speechTimer: number | null = null;
   private activeZone: InteractiveZone | null = null;
   private arStatus: ARTrackerStatus;
@@ -95,6 +96,8 @@ export class GameUI {
 
     const initLang = storageManager.getState().settings.language;
     this.feedbackBannerText = getTranslation(initLang).hud.welcomeToast;
+    this.feedbackVisible = true;
+    this.scheduleFeedbackHide(4500);
 
     this.bindGlobalShortcuts();
 
@@ -355,21 +358,36 @@ export class GameUI {
     }, 3200);
   }
 
-  public showFeedback(text: string): void {
-    this.feedbackBannerText = text;
+  private applyFeedbackVisibility(): void {
     const bannerEl = this.root.querySelector<HTMLElement>('#pet-feedback-toast');
-    if (bannerEl) {
-      bannerEl.textContent = text;
-      bannerEl.classList.remove('toast-pop');
-      void bannerEl.offsetWidth;
-      bannerEl.classList.add('toast-pop');
-    }
+    if (!bannerEl) return;
+    bannerEl.textContent = this.feedbackVisible ? this.feedbackBannerText : '';
+    bannerEl.classList.toggle('toast-hidden', !this.feedbackVisible);
+    bannerEl.classList.toggle('toast-pop', this.feedbackVisible);
+  }
+
+  private scheduleFeedbackHide(delay = 3200): void {
     if (this.feedbackTimer !== null) {
       window.clearTimeout(this.feedbackTimer);
     }
     this.feedbackTimer = window.setTimeout(() => {
       this.feedbackTimer = null;
-    }, 4500);
+      this.feedbackVisible = false;
+      this.applyFeedbackVisibility();
+    }, delay);
+  }
+
+  public showFeedback(text: string): void {
+    this.feedbackBannerText = text;
+    this.feedbackVisible = true;
+    const bannerEl = this.root.querySelector<HTMLElement>('#pet-feedback-toast');
+    if (bannerEl) {
+      // restart the pop animation on every new message
+      bannerEl.classList.remove('toast-pop');
+      void bannerEl.offsetWidth;
+    }
+    this.applyFeedbackVisibility();
+    this.scheduleFeedbackHide();
   }
 
   /**
@@ -1092,7 +1110,7 @@ export class GameUI {
         <!-- Unified Collapsible Bottom Pet Interaction Dock -->
         <section class="bottom-dock-wrapper ${this.dockCollapsed ? 'dock-collapsed' : ''} ${this.dockExtrasOpen ? 'dock-extras-open' : ''}" aria-label="Pet Interaction Controls">
           <div class="dock-top-bar">
-            <div class="pet-feedback-toast" id="pet-feedback-toast">${this.feedbackBannerText}</div>
+            <div class="pet-feedback-toast${this.feedbackVisible ? ' toast-pop' : ' toast-hidden'}" id="pet-feedback-toast">${this.feedbackVisible ? this.feedbackBannerText : ''}</div>
             <div class="dock-top-Controls-right">
               <button type="button" class="btn-dock-toggle btn-dock-extras-toggle" id="btn-toggle-dock-extras" aria-expanded="${this.dockExtrasOpen}">
                 ${this.dockExtrasOpen ? `▾ ${t.hud.musicToggle}` : `🎵 ${t.hud.musicToggle}`}
@@ -3081,7 +3099,9 @@ export class GameUI {
             this.sound.playClick();
             storageManager.updateSettings({ language: lang });
             this.feedbackBannerText = getTranslation(lang).hud.welcomeToast;
+            this.feedbackVisible = true;
             this.render();
+            this.scheduleFeedbackHide(4500);
           }
         });
       });
