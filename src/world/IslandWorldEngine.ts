@@ -283,7 +283,8 @@ export class IslandWorldEngine {
   public triggerZoneInteraction(zoneId: string): void {
     if (zoneId === 'sunberry_bush') {
       this.onPetInteract?.('feed');
-    } else if (zoneId === 'dragon_nest') {
+    } else if (zoneId.startsWith('dragon_nest')) {
+      // both dino beds (dragon_nest, dragon_nest_meadow) put EMBER to sleep
       this.onPetInteract?.('sleep');
     } else if (zoneId === 'mana_crystal') {
       this.onPetInteract?.('dance');

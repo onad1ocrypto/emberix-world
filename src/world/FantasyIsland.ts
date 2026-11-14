@@ -945,7 +945,7 @@ export class FantasyIsland extends THREE.Group {
     const meadowDinoBed = this.buildColorfulDinoBed(5.6, 5.8, -0.75, 'sunny_lavender');
     this.add(meadowDinoBed);
     this.interactiveZones.push({
-      id: 'dragon_nest',
+      id: 'dragon_nest_meadow',
       label: 'Meadow Dino Bed',
       actionHint: 'Sleep on the cozy Dino Bed (Sleep / Restore Energy)',
       position: meadowDinoBed.position.clone(),
