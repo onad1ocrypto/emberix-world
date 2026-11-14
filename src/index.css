@@ -1020,6 +1020,7 @@ button:disabled {
    the island stays readable underneath while the controls remain legible. */
 .bottom-dock-card.ui-card {
   background-color: rgba(14, 12, 24, 0.52);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   border-color: rgba(251, 191, 36, 0.26);
