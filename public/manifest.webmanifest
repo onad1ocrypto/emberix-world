@@ -1,0 +1,35 @@
+{
+  "id": "/",
+  "name": "Emberix World",
+  "short_name": "Emberix",
+  "description": "A 3D virtual pet simulator and AR dragon companion. Raise EMBER the baby fire dragon, explore the island, and summon your pet onto a real AR card.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#120905",
+  "theme_color": "#1a0b06",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

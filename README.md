@@ -118,6 +118,10 @@ src/
 public/assets/
   images/                    Creature artwork
   ar/                        AR card art, printable PDF, compiled .mind target
+public/
+  og-emberix-world.jpg       Social preview card (1200x630)
+  manifest.webmanifest       Web app manifest
+  icons/                     App icons
 ```
 
 ## Privacy
@@ -135,7 +139,8 @@ oversights:
 - Progress is per-browser — there is no cross-device sync
 - Local accounts are a convenience, not real authentication
 - The printable AR card ships as a 1024×1024 PNG and a single-page PDF
-- No offline mode or installable PWA yet
+- A web app manifest and icons are shipped, but there is no service worker yet,
+  so the app is not cached for offline play
 
 ## AI usage disclosure
 
