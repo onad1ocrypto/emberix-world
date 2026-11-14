@@ -114,6 +114,7 @@ export interface TranslationPack {
     muteAll: string;
     mutedBtn: string;
     activeBtn: string;
+    bgmTrackLabel: string;
     danceTrackLabel: string;
     graphicsHeading: string;
     graphicsQuality: string;
@@ -254,6 +255,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       muteAll: 'Mute All Audio',
       mutedBtn: 'Muted (Click to Unmute)',
       activeBtn: 'Sound Active (Click to Mute)',
+      bgmTrackLabel: 'Background Music — Soft & Romantic (100% Copyright-Free)',
       danceTrackLabel: 'Pet Dance Music (Royalty-Free / Public Domain)',
       graphicsHeading: 'Graphics & Camera (Android & Desktop)',
       graphicsQuality: 'Graphics Quality Preset',
@@ -398,6 +400,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       muteAll: 'Bisukan Semua Suara',
       mutedBtn: 'Dibisukan (Klik untuk Aktifkan)',
       activeBtn: 'Suara Aktif (Klik untuk Bisukan)',
+      bgmTrackLabel: 'Musik Background — Halus & Romantis (Bebas Copyright / CC0)',
       danceTrackLabel: 'Musik Dance Pet (Bebas Hak Cipta)',
       graphicsHeading: 'Grafis & Kamera (Android & Desktop)',
       graphicsQuality: 'Preset Kualitas Grafis',
@@ -539,6 +542,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       muteAll: '静音所有音频',
       mutedBtn: '已静音 (点击恢复声音)',
       activeBtn: '声音开启 (点击静音)',
+      bgmTrackLabel: '背景音乐 — 温柔浪漫奇幻曲 (无版权 / CC0)',
       danceTrackLabel: '宠物舞蹈音乐 (无版权 / 公共领域)',
       graphicsHeading: '画质与视角设置 (移动端与桌面端)',
       graphicsQuality: '画质预设档位',

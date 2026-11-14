@@ -57,10 +57,12 @@ export class EmberModel extends THREE.Group {
   private happyMagicRing!: THREE.Mesh;
 
   // Cosmetic groups
+  private foreheadTuftsGroup = new THREE.Group();
   private crownGroup = new THREE.Group();
   private collarGroup = new THREE.Group();
   private scarfGroup = new THREE.Group();
   private auraGroup = new THREE.Group();
+  private auraOverheadHalo = new THREE.Group();
 
   // Animation state
   private currentAnim: EmberAnimationState = 'idle';
@@ -553,7 +555,7 @@ export class EmberModel extends THREE.Group {
       this.headGroup.add(hornPivot);
     });
 
-    // Golden Flame Forehead Crest (3 cute dino tufts on top of head)
+    // Golden Flame Forehead Crest (3 cute dino tufts on top of head — hidden when Sunstone Crown is equipped)
     [-0.045, 0, 0.045].forEach((cx, idx) => {
       const h = idx === 1 ? 0.14 : 0.1;
       const tuft = new THREE.Mesh(
@@ -563,8 +565,9 @@ export class EmberModel extends THREE.Group {
       tuft.position.set(cx, 0.25 + (idx === 1 ? 0.02 : 0), 0.02 - Math.abs(cx));
       tuft.rotation.x = -0.28;
       tuft.rotation.z = -cx * 3.5;
-      this.headGroup.add(tuft);
+      this.foreheadTuftsGroup.add(tuft);
     });
+    this.headGroup.add(this.foreheadTuftsGroup);
 
     // 3. Large Expressive Baby Eyes + Dual Specular Catchlights + Sculpted Brow Ridges
     const createEye = (side: number) => {
@@ -1283,103 +1286,312 @@ export class EmberModel extends THREE.Group {
   }
 
   private buildCosmetics(): void {
-    // 1. Sunstone Crown
-    this.crownGroup.position.set(0, 0.245, 0.02);
+    // 1. Sunstone Crown — Royal golden diadem perched prominently atop EMBER's head
+    this.crownGroup.position.set(0, 0.265, 0.025);
+    this.crownGroup.rotation.x = -0.08;
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
-      emissive: 0xb45309,
-      emissiveIntensity: 0.2,
-      roughness: 0.16,
-      metalness: 0.88,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.38,
+      roughness: 0.14,
+      metalness: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const velvetMat = new THREE.MeshStandardMaterial({
+      color: 0x9f1239,
+      emissive: 0x4c0519,
+      emissiveIntensity: 0.25,
+      roughness: 0.55,
     });
     const rubyMat = new THREE.MeshStandardMaterial({
       color: 0xff1744,
-      emissive: 0xd50000,
-      emissiveIntensity: 0.55,
+      emissive: 0xff1744,
+      emissiveIntensity: 0.78,
+      roughness: 0.08,
+      metalness: 0.2,
+    });
+    const sapphireMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.75,
       roughness: 0.1,
     });
+
+    const baseRim = new THREE.Mesh(
+      new THREE.TorusGeometry(0.132, 0.022, 14, 32),
+      goldMat,
+    );
+    baseRim.rotation.x = Math.PI / 2;
+    baseRim.position.y = -0.022;
+    this.crownGroup.add(baseRim);
+
     const band = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.088, 0.078, 0.046, 18, 1, true),
+      new THREE.CylinderGeometry(0.148, 0.128, 0.082, 24, 1, false),
       goldMat,
     );
     this.crownGroup.add(band);
-    for (let i = 0; i < 5; i++) {
-      const a = (i / 5) * Math.PI * 2;
+
+    const velvetCushion = new THREE.Mesh(
+      new THREE.SphereGeometry(0.118, 20, 16),
+      velvetMat,
+    );
+    velvetCushion.scale.set(1.0, 0.62, 1.0);
+    velvetCushion.position.y = 0.025;
+    this.crownGroup.add(velvetCushion);
+
+    const spikeCount = 6;
+    for (let i = 0; i < spikeCount; i++) {
+      const a = (i / spikeCount) * Math.PI * 2;
       const point = new THREE.Mesh(
-        new THREE.ConeGeometry(0.025, 0.058, 6),
+        new THREE.ConeGeometry(0.036, 0.105, 8),
         goldMat,
       );
-      point.position.set(Math.sin(a) * 0.082, 0.042, Math.cos(a) * 0.082);
+      point.position.set(Math.sin(a) * 0.136, 0.078, Math.cos(a) * 0.136);
+      point.rotation.z = -Math.sin(a) * 0.14;
+      point.rotation.x = Math.cos(a) * 0.14;
       this.crownGroup.add(point);
+
+      const pearl = new THREE.Mesh(
+        new THREE.SphereGeometry(0.02, 12, 12),
+        i % 2 === 0 ? rubyMat : goldMat,
+      );
+      pearl.position.set(Math.sin(a) * 0.148, 0.132, Math.cos(a) * 0.148);
+      this.crownGroup.add(pearl);
     }
-    const ruby = new THREE.Mesh(new THREE.OctahedronGeometry(0.028, 0), rubyMat);
-    ruby.position.set(0, 0.016, 0.088);
-    this.crownGroup.add(ruby);
+
+    // Center Sunstone Ruby & side Sapphires on front of crown
+    const centerRuby = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.052, 0),
+      rubyMat,
+    );
+    centerRuby.scale.set(0.95, 1.2, 0.65);
+    centerRuby.position.set(0, 0.015, 0.148);
+    this.crownGroup.add(centerRuby);
+
+    [-1, 1].forEach((side) => {
+      const sideGem = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.034, 0),
+        sapphireMat,
+      );
+      sideGem.position.set(side * 0.105, 0.01, 0.098);
+      this.crownGroup.add(sideGem);
+    });
     this.headGroup.add(this.crownGroup);
 
-    // 2. Runic Star Collar
-    this.collarGroup.position.set(0, 0.17, 0.06);
-    this.collarGroup.rotation.x = 0.22;
+    // 2. Runic Star Collar — Arcane sapphire-obsidian & gold torc outside EMBER's 0.31m torso with 360° glowing cyan starlight crystals & floating shoulder runes
+    this.collarGroup.position.set(0, 0.165, 0.035);
+    this.collarGroup.rotation.x = 0.18;
+    const collarObsidianMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.45,
+      roughness: 0.18,
+      metalness: 0.85,
+    });
+    const manaGemMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x00e5ff,
+      emissiveIntensity: 1.1,
+      roughness: 0.06,
+      metalness: 0.2,
+    });
+
     const collarRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.19, 0.024, 10, 24),
-      new THREE.MeshStandardMaterial({
-        color: 0x1e293b,
-        roughness: 0.3,
-        metalness: 0.7,
-      }),
+      new THREE.TorusGeometry(0.305, 0.046, 18, 40),
+      collarObsidianMat,
     );
     collarRing.rotation.x = Math.PI / 2;
-    const manaGem = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.045, 0),
-      new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        emissive: 0x0284c7,
-        emissiveIntensity: 0.75,
-        roughness: 0.1,
-      }),
+    this.collarGroup.add(collarRing);
+
+    // Dual golden trim rings wrapping outside collar
+    [-0.028, 0.028].forEach((offsetY) => {
+      const goldTrimRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.318, 0.016, 14, 40),
+        goldMat,
+      );
+      goldTrimRing.rotation.x = Math.PI / 2;
+      goldTrimRing.position.y = offsetY;
+      this.collarGroup.add(goldTrimRing);
+    });
+
+    // Golden bezel & large cyan Starlight Mana Crystal Pendant on front chest
+    const pendantBezel = new THREE.Mesh(
+      new THREE.TorusGeometry(0.078, 0.018, 12, 24),
+      goldMat,
     );
-    manaGem.position.set(0, -0.02, 0.205);
-    this.collarGroup.add(collarRing, manaGem);
+    pendantBezel.position.set(0, -0.055, 0.345);
+    this.collarGroup.add(pendantBezel);
+
+    const manaGem = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.088, 0),
+      manaGemMat,
+    );
+    manaGem.scale.set(0.9, 1.28, 0.7);
+    manaGem.position.set(0, -0.055, 0.36);
+    this.collarGroup.add(manaGem);
+
+    // 8 glowing cyan runic crystals spaced 360° around the collar + 2 large floating shoulder rune crystals
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const runeStud = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.048, 0),
+        manaGemMat,
+      );
+      runeStud.position.set(
+        Math.sin(angle) * 0.345,
+        0,
+        Math.cos(angle) * 0.345,
+      );
+      this.collarGroup.add(runeStud);
+    }
+    [-1, 1].forEach((side) => {
+      const shoulderCrystal = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.078, 0),
+        manaGemMat,
+      );
+      shoulderCrystal.scale.set(0.8, 1.45, 0.8);
+      shoulderCrystal.position.set(side * 0.39, 0.06, 0.06);
+      shoulderCrystal.rotation.z = -side * 0.35;
+      this.collarGroup.add(shoulderCrystal);
+    });
     this.bodyGroup.add(this.collarGroup);
 
-    // 3. Emberweave Scarf
-    this.scarfGroup.position.set(0, 0.16, 0.05);
+    // 3. Emberweave Scarf — Thick cozy hand-knitted Royal Indigo-Teal, Warm Cream & Gold winter scarf wrapped outside EMBER's 0.31m torso with flowing tails on front & sides
+    this.scarfGroup.position.set(0, 0.16, 0.035);
     const scarfMat = new THREE.MeshStandardMaterial({
-      color: 0xe11d48,
-      roughness: 0.62,
-      metalness: 0.05,
+      color: 0x2563eb,
+      emissive: 0x1d4ed8,
+      emissiveIntensity: 0.32,
+      roughness: 0.52,
+      metalness: 0.08,
     });
-    const scarfTorus = new THREE.Mesh(
-      new THREE.TorusGeometry(0.198, 0.04, 12, 24),
+    const scarfGoldStripeMat = new THREE.MeshStandardMaterial({
+      color: 0xfde047,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 0.42,
+      roughness: 0.32,
+      metalness: 0.35,
+    });
+
+    const scarfTorusLower = new THREE.Mesh(
+      new THREE.TorusGeometry(0.312, 0.068, 20, 40),
       scarfMat,
     );
-    scarfTorus.rotation.x = Math.PI / 2 + 0.2;
-    const scarfTail = new THREE.Mesh(
-      new THREE.BoxGeometry(0.072, 0.23, 0.026),
+    scarfTorusLower.rotation.x = Math.PI / 2 + 0.18;
+    this.scarfGroup.add(scarfTorusLower);
+
+    const scarfTorusUpper = new THREE.Mesh(
+      new THREE.TorusGeometry(0.295, 0.056, 18, 36),
       scarfMat,
     );
-    scarfTail.position.set(0.125, -0.1, 0.165);
-    scarfTail.rotation.z = 0.25;
-    this.scarfGroup.add(scarfTorus, scarfTail);
+    scarfTorusUpper.rotation.x = Math.PI / 2 + 0.15;
+    scarfTorusUpper.position.set(0, 0.048, 0.01);
+    this.scarfGroup.add(scarfTorusUpper);
+
+    const scarfGoldBand = new THREE.Mesh(
+      new THREE.TorusGeometry(0.332, 0.026, 14, 40),
+      scarfGoldStripeMat,
+    );
+    scarfGoldBand.rotation.x = Math.PI / 2 + 0.18;
+    scarfGoldBand.position.set(0, 0.015, 0.005);
+    this.scarfGroup.add(scarfGoldBand);
+
+    // Cozy oversized scarf knots & flowing tails on both front-right and side-left so it's unmistakable from every camera angle
+    [-1, 1].forEach((side) => {
+      const scarfKnot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.088, 16, 14),
+        scarfMat,
+      );
+      scarfKnot.scale.set(1.15, 0.95, 0.95);
+      scarfKnot.position.set(side * 0.24, -0.02, 0.24);
+      this.scarfGroup.add(scarfKnot);
+
+      const scarfTailMain = new THREE.Mesh(
+        new THREE.BoxGeometry(0.125, 0.34, 0.055),
+        scarfMat,
+      );
+      scarfTailMain.position.set(side * 0.27, -0.175, 0.24);
+      scarfTailMain.rotation.z = -side * 0.22;
+      scarfTailMain.rotation.y = side * 0.55;
+      this.scarfGroup.add(scarfTailMain);
+
+      const scarfTailStripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.132, 0.045, 0.062),
+        scarfGoldStripeMat,
+      );
+      scarfTailStripe.position.set(side * 0.295, -0.275, 0.24);
+      scarfTailStripe.rotation.z = -side * 0.22;
+      scarfTailStripe.rotation.y = side * 0.55;
+      this.scarfGroup.add(scarfTailStripe);
+    });
     this.bodyGroup.add(this.scarfGroup);
 
-    // 4. Solar Halo Aura
-    this.auraGroup.position.set(0, 0.15, 0);
-    const starMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
+    // 4. Solar Halo Aura — Intersecting celestial golden & violet rings + overhead solar halo + 8 large orbiting star crystals
+    this.auraGroup.position.set(0, 0.16, 0);
+    const solarGoldRingMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 0.95,
+      roughness: 0.1,
+      metalness: 0.5,
+    });
+    const celestialCyanMat = new THREE.MeshStandardMaterial({
+      color: 0x7dd3fc,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.95,
+      roughness: 0.1,
+      metalness: 0.4,
+    });
+
+    const outerOrbitRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.56, 0.016, 12, 48),
+      solarGoldRingMat,
+    );
+    outerOrbitRing.rotation.x = Math.PI / 2 + 0.28;
+    outerOrbitRing.rotation.y = 0.22;
+    this.auraGroup.add(outerOrbitRing);
+
+    const innerOrbitRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.48, 0.013, 12, 48),
+      celestialCyanMat,
+    );
+    innerOrbitRing.rotation.x = Math.PI / 2 - 0.32;
+    innerOrbitRing.rotation.z = -0.26;
+    this.auraGroup.add(innerOrbitRing);
+
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
       const star = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.038, 0),
-        starMat,
+        new THREE.OctahedronGeometry(i % 2 === 0 ? 0.068 : 0.052, 0),
+        i % 2 === 0 ? solarGoldRingMat : celestialCyanMat,
       );
       star.position.set(
-        Math.cos(a) * 0.46,
-        Math.sin(i * 1.5) * 0.08,
-        Math.sin(a) * 0.46,
+        Math.cos(a) * 0.56,
+        Math.sin(i * 1.5) * 0.14,
+        Math.sin(a) * 0.56,
       );
       this.auraGroup.add(star);
     }
     this.bodyGroup.add(this.auraGroup);
+
+    // Overhead floating Solar Halo above EMBER's head
+    this.auraOverheadHalo.position.set(0, 0.44, -0.02);
+    const overheadHaloTorus = new THREE.Mesh(
+      new THREE.TorusGeometry(0.21, 0.022, 14, 36),
+      solarGoldRingMat,
+    );
+    overheadHaloTorus.rotation.x = Math.PI / 2;
+    this.auraOverheadHalo.add(overheadHaloTorus);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      const raySpike = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.036, 0),
+        solarGoldRingMat,
+      );
+      raySpike.position.set(Math.cos(a) * 0.24, 0, Math.sin(a) * 0.24);
+      this.auraOverheadHalo.add(raySpike);
+    }
+    this.headGroup.add(this.auraOverheadHalo);
   }
 
   private createHeartGeometry(): THREE.BufferGeometry {
@@ -1604,9 +1816,11 @@ export class EmberModel extends THREE.Group {
 
   public setCosmetic(cosmeticId: CosmeticId): void {
     this.crownGroup.visible = cosmeticId === 'crown';
+    this.foreheadTuftsGroup.visible = cosmeticId !== 'crown';
     this.collarGroup.visible = cosmeticId === 'collar';
     this.scarfGroup.visible = cosmeticId === 'scarf';
     this.auraGroup.visible = cosmeticId === 'flame_aura';
+    this.auraOverheadHalo.visible = cosmeticId === 'flame_aura';
   }
 
   public setFriendshipLevel(friendship: number): void {
@@ -1684,6 +1898,9 @@ export class EmberModel extends THREE.Group {
     // Update orbiting aura if visible
     if (this.auraGroup.visible) {
       this.auraGroup.rotation.y += clampedDt * 1.8;
+      this.auraOverheadHalo.rotation.y -= clampedDt * 2.2;
+      this.auraOverheadHalo.position.y =
+        0.44 + Math.sin(this.animTime * 4.0) * 0.025;
     }
 
     // Update reaction particles

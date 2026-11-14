@@ -202,6 +202,8 @@ export class MindARTracker {
       }
 
       this.mediaStream = stream;
+      const hideSyntheticDebugStream =
+        !this.isDebugEnabled() && this.isSyntheticTestStream(stream);
       const video = document.createElement('video');
       video.setAttribute('playsinline', 'true');
       video.setAttribute('webkit-playsinline', 'true');
@@ -209,6 +211,10 @@ export class MindARTracker {
       video.autoplay = true;
       video.srcObject = stream;
       video.className = 'ar-camera-video';
+      if (hideSyntheticDebugStream) {
+        video.style.opacity = '0';
+        video.style.visibility = 'hidden';
+      }
       mountContainer.prepend(video);
       this.videoEl = video;
 
@@ -220,6 +226,10 @@ export class MindARTracker {
         cameraState: 'streaming',
         errorMessage: undefined,
       });
+
+      if (hideSyntheticDebugStream) {
+        this.setSimulatedCardAnchor(true);
+      }
     } catch (err) {
       const isDenied =
         err instanceof DOMException &&
@@ -234,6 +244,33 @@ export class MindARTracker {
     }
 
     this.startRenderLoop();
+  }
+
+  private isDebugEnabled(): boolean {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('debug') === '1';
+  }
+
+  private isSyntheticTestStream(stream: MediaStream): boolean {
+    return stream.getVideoTracks().some((track) => {
+      const label = (track.label || '').toLowerCase();
+      return /fake|synthetic|test pattern|vivid/i.test(label);
+    });
+  }
+
+  private isSyntheticGreenTestFrame(imgData: Uint8ClampedArray): boolean {
+    let pureGreenPixels = 0;
+    const totalSamples = 64;
+    for (let i = 0; i < totalSamples; i++) {
+      const idx = i * 64 * 4;
+      const r = imgData[idx];
+      const g = imgData[idx + 1];
+      const b = imgData[idx + 2];
+      if (g > 130 && r < 45 && b < 45) {
+        pureGreenPixels++;
+      }
+    }
+    return pureGreenPixels >= 36;
   }
 
   private setupThreeOverlay(
@@ -479,6 +516,17 @@ export class MindARTracker {
 
     this.processCtx.drawImage(this.videoEl, 0, 0, 64, 64);
     const imgData = this.processCtx.getImageData(0, 0, 64, 64).data;
+
+    if (!this.isDebugEnabled() && this.isSyntheticGreenTestFrame(imgData)) {
+      if (this.videoEl.style.opacity !== '0') {
+        this.videoEl.style.opacity = '0';
+        this.videoEl.style.visibility = 'hidden';
+      }
+      if (!this.status.simulatedCardActive) {
+        this.setSimulatedCardAnchor(true);
+      }
+      return { detected: false, normX: 0, normY: 0, scale: 1, confidence: 0 };
+    }
 
     const targetGrid = this.mindHeader.grid16;
     const targetColor = this.mindHeader.colorSignature;

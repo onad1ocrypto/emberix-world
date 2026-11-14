@@ -1059,30 +1059,25 @@ export class IslandWorldEngine {
   private afterDraw(cb: () => void): void {
     const gl = this.renderer.getContext() as WebGL2RenderingContext | null;
     if (!gl || typeof gl.fenceSync !== 'function') {
-      this.frameId = window.setTimeout(cb, 220);
+      this.frameId = window.setTimeout(cb, 80);
       return;
     }
     const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
     gl.flush();
-    let polls = 0;
     const poll = () => {
       if (this.paused) {
         if (sync) gl.deleteSync(sync);
         return;
       }
-      polls++;
-      const waitRes = sync
-        ? gl.clientWaitSync(sync, gl.SYNC_FLUSH_COMMANDS_BIT, 0)
-        : gl.ALREADY_SIGNALED;
-      if (waitRes === gl.TIMEOUT_EXPIRED && polls < 60) {
-        this.frameId = window.setTimeout(poll, 10);
+      const state = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
+      if (state === gl.UNSIGNALED) {
+        this.frameId = window.setTimeout(poll, 5);
       } else {
         if (sync) gl.deleteSync(sync);
-        const delayMs = this.mode === 'playing' ? 180 : 500;
-        this.frameId = window.setTimeout(cb, delayMs);
+        this.frameId = window.setTimeout(cb, 80);
       }
     };
-    this.frameId = window.setTimeout(poll, 10);
+    this.frameId = window.setTimeout(poll, 5);
   }
 
   /**

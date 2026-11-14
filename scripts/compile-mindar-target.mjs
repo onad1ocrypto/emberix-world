@@ -29,7 +29,7 @@ const ROOT_DIR = process.cwd();
 const OUT_DIR = path.join(ROOT_DIR, 'public', 'assets', 'ar');
 const SOURCE_JPG = path.join(
   ROOT_DIR,
-  'src',
+  'public',
   'assets',
   'images',
   'ember_ar_marker_art_1794495970735.jpg',

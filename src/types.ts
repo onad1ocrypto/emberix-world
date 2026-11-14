@@ -21,6 +21,11 @@ export type DanceTrackId =
   | 'cancan_polka'
   | 'electro_fiesta';
 
+export type BackgroundTrackId =
+  | 'solara_serenade'
+  | 'starlight_gymnopedie'
+  | 'moonlit_romance';
+
 export type PlayerAvatarId =
   | 'fire_keeper'
   | 'crystal_mage'
@@ -31,6 +36,15 @@ export type PlayerAvatarId =
 
 export interface DanceTrackDefinition {
   id: DanceTrackId;
+  title: string;
+  genre: string;
+  bpm: number;
+  licenseTag: string;
+  accentColor: string;
+}
+
+export interface BackgroundTrackDefinition {
+  id: BackgroundTrackId;
   title: string;
   genre: string;
   bpm: number;
@@ -120,6 +134,7 @@ export interface GameSettings {
   graphicsQuality: GraphicsQuality;
   cameraSensitivity: number; // 0.3 - 2.0
   selectedDanceTrack: DanceTrackId;
+  selectedBgmTrack?: BackgroundTrackId;
 }
 
 export interface SaveData {

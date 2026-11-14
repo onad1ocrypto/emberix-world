@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  BACKGROUND_TRACKS,
   DANCE_TRACKS,
   DEFAULT_PROGRESSION,
   DEFAULT_STATS,
@@ -248,7 +249,18 @@ test('compiled MindAR ember-card.mind file exists and parses with valid features
   assert.ok(parsed.pyramidData && parsed.pyramidData.byteLength > 65536);
 });
 
-test('copyright-free dance tracks and player registration/login system work accurately', () => {
+test('copyright-free romantic background music and dance tracks and player registration/login system work accurately', () => {
+  assert.equal(BACKGROUND_TRACKS.length, 3);
+  for (const bgm of BACKGROUND_TRACKS) {
+    assert.ok(bgm.bpm >= 60 && bgm.bpm <= 80, 'Romantic BGM must have a soft gentle tempo');
+    assert.ok(bgm.title.length > 3);
+    assert.ok(
+      bgm.licenseTag.includes('CC0') ||
+        bgm.licenseTag.includes('Public Domain'),
+      'Romantic BGM must be 100% copyright-free (CC0 / Public Domain)',
+    );
+  }
+
   assert.equal(DANCE_TRACKS.length, 4);
   for (const track of DANCE_TRACKS) {
     assert.ok(track.bpm >= 110 && track.bpm <= 160);
@@ -261,6 +273,9 @@ test('copyright-free dance tracks and player registration/login system work accu
   assert.equal(PLAYER_AVATARS.length, 6);
 
   const mgr = new StorageManager();
+  assert.equal(mgr.getState().settings.selectedBgmTrack, 'solara_serenade');
+  mgr.updateSettings({ selectedBgmTrack: 'starlight_gymnopedie' });
+  assert.equal(mgr.getState().settings.selectedBgmTrack, 'starlight_gymnopedie');
   assert.equal(mgr.getCurrentUser(), null);
 
   // Register new player account
@@ -393,6 +408,22 @@ test('real-time radar minimap coordinate mapping and zone labels track player po
   assert.equal(outerPt.x, 91.5);
   assert.equal(outerPt.y, 50);
 });
+
+test('all 5 Dragon Gear cosmetics are unlocked and can be equipped immediately', () => {
+  const mgr = new StorageManager();
+  const cosmetics = ['none', 'crown', 'collar', 'scarf', 'flame_aura'] as const;
+  for (const id of cosmetics) {
+    assert.equal(
+      mgr.getState().progression.unlockedCosmetics.includes(id),
+      true,
+      `Expected Dragon Gear cosmetic '${id}' to be unlocked by default`,
+    );
+    const equipped = mgr.equipCosmetic(id);
+    assert.equal(equipped, true);
+    assert.equal(mgr.getState().progression.equippedCosmetic, id);
+  }
+});
+
 
 
 

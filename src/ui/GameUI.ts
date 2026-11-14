@@ -4,6 +4,7 @@ import {
   AR_CARD_MIND_PATH,
   AR_CARD_PDF_PATH,
   AR_CARD_PNG_PATH,
+  BACKGROUND_TRACKS,
   COSMETICS,
   CREATURES,
   DANCE_TRACKS,
@@ -28,6 +29,7 @@ import { storageManager } from '../storage/StorageManager';
 import type {
   AppLanguage,
   AppMode,
+  BackgroundTrackId,
   CosmeticId,
   DanceTrackId,
   GraphicsQuality,
@@ -1119,20 +1121,25 @@ export class GameUI {
 
             <!-- Quick Cosmetic & Copyright-Free Dance Music Bar -->
             <div class="dock-strips-stack">
-              <div class="cosmetic-strip">
+              <div class="cosmetic-strip" role="group" aria-label="Select Dragon Gear">
                 <span class="cosmetic-strip-label">${t.hud.dragonGear}</span>
                 ${COSMETICS.map((c) => {
-                  const unlocked = progression.unlockedCosmetics.includes(c.id);
                   const active = progression.equippedCosmetic === c.id;
+                  const gearIcons: Record<CosmeticId, string> = {
+                    none: '🐉',
+                    crown: '👑',
+                    collar: '💎',
+                    scarf: '🧣',
+                    flame_aura: '✨',
+                  };
                   return `
                     <button
                       type="button"
-                      class="btn-cosmetic-chip ${active ? 'chip-active' : ''} ${!unlocked ? 'chip-locked' : ''}"
+                      class="btn-cosmetic-chip ${active ? 'chip-active' : ''}"
                       data-cosmetic-id="${c.id}"
-                      ${!unlocked ? 'disabled' : ''}
-                      title="${unlocked ? c.description : `Unlocks at ${petName} Lv.${c.requiredCreatureLevel}`}"
+                      title="${c.description}"
                     >
-                      ${c.name}${!unlocked ? ` (Lv.${c.requiredCreatureLevel})` : ''}
+                      ${gearIcons[c.id]} ${c.name}
                     </button>
                   `;
                 }).join('')}
@@ -1828,6 +1835,27 @@ export class GameUI {
                 <button type="button" class="btn-surface btn-sm" id="btn-toggle-mute">
                   <span>${settings.muted ? t.settings.mutedBtn : t.settings.activeBtn}</span>
                 </button>
+              </div>
+
+              <div class="setting-control-row">
+                <span>${t.settings.bgmTrackLabel}</span>
+                <div class="dance-settings-grid">
+                  ${BACKGROUND_TRACKS.map((bgm) => {
+                    const currentBgm =
+                      settings.selectedBgmTrack || 'solara_serenade';
+                    const active = currentBgm === bgm.id;
+                    return `
+                      <button
+                        type="button"
+                        class="btn-dance-setting ${active ? 'seg-active' : ''}"
+                        data-setting-bgm="${bgm.id}"
+                      >
+                        <strong>🌸 ${bgm.title} (${bgm.bpm} BPM)</strong>
+                        <small>${bgm.genre} · ${bgm.licenseTag}</small>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
               </div>
 
               <div class="setting-control-row">
@@ -2722,9 +2750,17 @@ export class GameUI {
         btn.addEventListener('click', () => {
           const id = btn.dataset.cosmeticId as CosmeticId;
           if (id && storageManager.equipCosmetic(id)) {
+            const cosmetic = COSMETICS.find((c) => c.id === id);
+            this.world.setCosmetic(id);
             this.sound.playHappyChirp();
-            this.world.triggerEmberAnimation('happy', 1.5);
+            this.world.triggerEmberAnimation('happy', 1.8);
             this.render();
+            if (cosmetic) {
+              this.showSpeechBubble(`✨ Wearing ${cosmetic.name}!`);
+              this.showFeedback(
+                `✨ Dragon Gear: ${cosmetic.name} — ${cosmetic.description}`,
+              );
+            }
           }
         });
       });
@@ -3025,6 +3061,19 @@ export class GameUI {
         const s = storageManager.getState().settings;
         storageManager.updateSettings({ muted: !s.muted });
         this.render();
+      });
+
+    this.root
+      .querySelectorAll<HTMLButtonElement>('[data-setting-bgm]')
+      .forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const bgmId = btn.dataset.settingBgm as BackgroundTrackId;
+          if (bgmId) {
+            storageManager.updateSettings({ selectedBgmTrack: bgmId });
+            this.sound.setBackgroundTrack(bgmId);
+            this.render();
+          }
+        });
       });
 
     this.root

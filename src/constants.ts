@@ -1,5 +1,6 @@
 import type {
   AchievementState,
+  BackgroundTrackDefinition,
   CosmeticDefinition,
   CreatureDefinition,
   DanceTrackDefinition,
@@ -12,6 +13,33 @@ import type {
 export const STORAGE_KEY = 'xr_creature_world_save_v1';
 export const ACCOUNTS_STORAGE_KEY = 'xr_creature_world_accounts_v1';
 export const ACTIVE_ACCOUNT_ID_KEY = 'xr_creature_world_active_user_v1';
+
+export const BACKGROUND_TRACKS: BackgroundTrackDefinition[] = [
+  {
+    id: 'solara_serenade',
+    title: 'Solara Sunset Serenade',
+    genre: 'Soft Romantic Harp, Celesta & Warm Strings',
+    bpm: 68,
+    licenseTag: 'CC0 1.0 Public Domain / Original Royalty-Free',
+    accentColor: '#F472B6',
+  },
+  {
+    id: 'starlight_gymnopedie',
+    title: 'Starlight Sanctuary (Gymnopédie No. 1)',
+    genre: 'Erik Satie 1888 Romantic Piano & Harp Lullaby',
+    bpm: 66,
+    licenseTag: 'Public Domain (PD 1888)',
+    accentColor: '#38BDF8',
+  },
+  {
+    id: 'moonlit_romance',
+    title: 'Moonlit Blossom Nocturne',
+    genre: 'Gentle Romantic Music Box & Warm Flute',
+    bpm: 72,
+    licenseTag: 'CC0 1.0 Public Domain / Original Royalty-Free',
+    accentColor: '#C084FC',
+  },
+];
 
 export const DANCE_TRACKS: DanceTrackDefinition[] = [
   {
@@ -130,7 +158,7 @@ export const CREATURES: CreatureDefinition[] = [
     rarity: 'Mythic Starter',
     unlocked: true,
     playable: true,
-    artworkPath: '/src/assets/images/ember_ar_marker_art_1794495970735.jpg',
+    artworkPath: '/assets/images/ember_ar_marker_art_1794495970735.jpg',
     primaryColor: '#FF6B2B',
     secondaryColor: '#FBBF24',
     personality: 'Playful, affectionate, curious, and fiercely loyal',
@@ -152,7 +180,7 @@ export const CREATURES: CreatureDefinition[] = [
     rarity: 'Legendary',
     unlocked: false,
     playable: false,
-    artworkPath: '/src/assets/images/aqua_creature_art_1794495971641.jpg',
+    artworkPath: '/assets/images/aqua_creature_art_1794495971641.jpg',
     primaryColor: '#0EA5E9',
     secondaryColor: '#38BDF8',
     personality: 'Serene, musical, and inquisitive',
@@ -174,7 +202,7 @@ export const CREATURES: CreatureDefinition[] = [
     rarity: 'Epic',
     unlocked: false,
     playable: false,
-    artworkPath: '/src/assets/images/moss_creature_art_1794495973388.jpg',
+    artworkPath: '/assets/images/moss_creature_art_1794495973388.jpg',
     primaryColor: '#10B981',
     secondaryColor: '#A3E635',
     personality: 'Gentle, sleepy, nurturing, and wise',
@@ -196,7 +224,7 @@ export const CREATURES: CreatureDefinition[] = [
     rarity: 'Legendary',
     unlocked: false,
     playable: false,
-    artworkPath: '/src/assets/images/volt_creature_art_1794495974744.jpg',
+    artworkPath: '/assets/images/volt_creature_art_1794495974744.jpg',
     primaryColor: '#F59E0B',
     secondaryColor: '#22D3EE',
     personality: 'Energetic, mischievous, and lightning-fast',
@@ -319,7 +347,7 @@ export const DEFAULT_PROGRESSION: ProgressionState = {
   selfieCount: 0,
   lastSavedAt: Date.now(),
   lastDailyClaimDate: '',
-  unlockedCosmetics: ['none', 'crown'],
+  unlockedCosmetics: ['none', 'crown', 'collar', 'scarf', 'flame_aura'],
   equippedCosmetic: 'crown',
   unlockedAchievements: [],
 };
@@ -330,11 +358,12 @@ export function getDefaultSettings(): GameSettings {
     /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   return {
     language: 'en',
-    musicVolume: 55,
+    musicVolume: 65,
     sfxVolume: 75,
     muted: false,
     graphicsQuality: isMobile ? 'medium' : 'high',
     cameraSensitivity: 1.0,
     selectedDanceTrack: 'dino_bounce',
+    selectedBgmTrack: 'solara_serenade',
   };
 }

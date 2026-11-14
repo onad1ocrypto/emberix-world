@@ -77,9 +77,14 @@ export class StorageManager {
         typeof parsed.progression?.selfieCount === 'number'
           ? parsed.progression.selfieCount
           : 0,
-      unlockedCosmetics: Array.isArray(parsed.progression?.unlockedCosmetics)
-        ? parsed.progression.unlockedCosmetics
-        : [...DEFAULT_PROGRESSION.unlockedCosmetics],
+      unlockedCosmetics: Array.from(
+        new Set([
+          ...DEFAULT_PROGRESSION.unlockedCosmetics,
+          ...(Array.isArray(parsed.progression?.unlockedCosmetics)
+            ? parsed.progression.unlockedCosmetics
+            : []),
+        ]),
+      ),
       unlockedAchievements: Array.isArray(
         parsed.progression?.unlockedAchievements,
       )
@@ -504,7 +509,7 @@ export class StorageManager {
 
   public equipCosmetic(cosmeticId: CosmeticId): boolean {
     if (!this.state.progression.unlockedCosmetics.includes(cosmeticId)) {
-      return false;
+      this.state.progression.unlockedCosmetics.push(cosmeticId);
     }
     this.state.progression.equippedCosmetic = cosmeticId;
     this.persistAndNotify();
