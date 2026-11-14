@@ -929,13 +929,13 @@ export class FantasyIsland extends THREE.Group {
       meshGroup: bushGroup,
     });
 
-    // Interactive Colorful Plush Dino Bed ("Kasur Dino Warna-Warni") right in the main game arena
+    // Interactive colorful plush dino bed in the main game arena
     const mainDinoBed = this.buildColorfulDinoBed(3.35, 0.45, -0.42, 'turquoise_pink');
     this.add(mainDinoBed);
     this.interactiveZones.push({
       id: 'dragon_nest',
-      label: 'Kasur Dino Warna-Warni',
-      actionHint: 'Tidur di Kasur Dino Lucu (Sleep / Restore Energy)',
+      label: 'Rainbow Dino Bed',
+      actionHint: 'Sleep on the cozy Dino Bed (Sleep / Restore Energy)',
       position: mainDinoBed.position.clone(),
       radius: 3.2,
       meshGroup: mainDinoBed,
@@ -946,8 +946,8 @@ export class FantasyIsland extends THREE.Group {
     this.add(meadowDinoBed);
     this.interactiveZones.push({
       id: 'dragon_nest',
-      label: 'Kasur Dino Pelangi',
-      actionHint: 'Tidur di Kasur Dino Lucu (Sleep / Restore Energy)',
+      label: 'Meadow Dino Bed',
+      actionHint: 'Sleep on the cozy Dino Bed (Sleep / Restore Energy)',
       position: meadowDinoBed.position.clone(),
       radius: 3.2,
       meshGroup: meadowDinoBed,
@@ -955,7 +955,7 @@ export class FantasyIsland extends THREE.Group {
   }
 
   /**
-   * Builds a super-cute, colorful 3D Plush Dinosaur Bed ("Kasur Dino Warna-Warni")
+   * Builds a super-cute, colorful 3D plush dinosaur bed
    * with a quilted rainbow-star mattress, 14 plump multi-colored bolster cushions,
    * a smiling sleeping 3D plush dino head pillow with golden horns & rosy cheeks,
    * rainbow triangular dino dorsal spines around the rim, a curled plush dino tail,
