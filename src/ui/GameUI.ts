@@ -52,6 +52,7 @@ export class GameUI {
   private selectedEncyclopediaId: 'ember' | 'aqua' | 'moss' | 'volt' = 'ember';
   private dockCollapsed = false;
   private dockExtrasOpen = false;
+  private mobileNavOpen = false;
   private confirmResetOpen = false;
   private authTab: 'login' | 'register' = 'register';
   private selectedRegisterAvatar: PlayerAvatarId = 'fire_keeper';
@@ -193,6 +194,7 @@ export class GameUI {
 
     this.mode = nextMode;
     this.confirmResetOpen = false;
+    this.mobileNavOpen = false;
     this.draftPetName = storageManager.getPetName();
 
     if (nextMode === 'title') {
@@ -945,16 +947,15 @@ export class GameUI {
             ${this.renderEmberAvatarSVG()}
             <div class="hud-creature-meta">
               <div class="hud-name-line">
-                <h2 class="hud-creature-name">${petName} <span class="hud-lvl-text tabular-nums">Lv.${creatureLvl.level}</span></h2>
+                <h2 class="hud-creature-name">${petName}<span class="hud-lvl-text tabular-nums">Lv.${creatureLvl.level}</span></h2>
                 <span class="hud-state-label" id="hud-sleep-badge">${stats.isSleeping ? t.hud.sleeping : t.hud.active}</span>
               </div>
-              <p class="hud-sub-meta">
-                <span>${t.hud.bond} Lv.${progression.friendshipLevel}</span>
-                <span aria-hidden="true">·</span>
+              <div class="hud-sub-meta">
+                <span class="hud-bond-label">${t.hud.bond} Lv.${progression.friendshipLevel}</span>
                 <button type="button" class="btn-camera-focus-chip" id="hud-btn-camera-mode">
                   ${this.world.closeUpMode ? t.hud.islandView : t.hud.careCloseUp}
                 </button>
-              </p>
+              </div>
             </div>
           </div>
 
@@ -995,7 +996,27 @@ export class GameUI {
         </section>
 
         <!-- Top-Right Minimap Radar + Navigation Cluster -->
-        <nav class="hud-top-right" aria-label="World Navigation">
+        <nav class="hud-top-right ${this.mobileNavOpen ? 'mobile-nav-open' : ''}" aria-label="World Navigation">
+          <div class="hud-mobile-quick-bar">
+            <button
+              type="button"
+              class="btn-hud-nav btn-mobile-nav-toggle ${this.mobileNavOpen ? 'nav-toggle-active' : ''}"
+              id="hud-btn-mobile-nav"
+              aria-expanded="${this.mobileNavOpen}"
+              aria-label="Toggle World Menu"
+            >
+              <span>${this.mobileNavOpen ? '✕' : '☰'} ${t.hud.menuToggle}</span>
+            </button>
+            <button
+              type="button"
+              class="btn-hud-icon btn-mobile-home-quick"
+              id="hud-btn-mobile-home"
+              aria-label="Main Menu"
+            >
+              <span>🏠</span>
+            </button>
+          </div>
+
           <div class="hud-nav-pills">
             <button type="button" class="btn-hud-nav btn-hud-selfie" id="hud-btn-selfie" aria-label="Selfie Portrait Studio">
               <span>${t.hud.selfieBtn}</span>
@@ -1064,6 +1085,7 @@ export class GameUI {
 
         <!-- Jump Action Button -->
         <button type="button" class="btn-mobile-jump" id="btn-jump-action" aria-label="Jump">
+          <span class="jump-arrow-icon" aria-hidden="true">▲</span>
           <span>${t.hud.jump}</span>
         </button>
 
@@ -2033,19 +2055,19 @@ export class GameUI {
                   <div class="keeper-id-stats-row">
                     <div class="keeper-stat-box">
                       <span>Player Lv.</span>
-                      <strong class="tabular-nums">Lv.${playerLvl.level} (${progression.playerXp} XP)</strong>
+                      <strong class="tabular-nums">Lv.${playerLvl.level} · ${progression.playerXp} XP</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span id="passport-pet-name-label">${petName} Lv.</span>
-                      <strong class="tabular-nums">Lv.${creatureLvl.level} (${progression.creatureXp} XP)</strong>
+                      <strong class="tabular-nums">Lv.${creatureLvl.level} · ${progression.creatureXp} XP</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span>Friendship</span>
-                      <strong class="tabular-nums">${stats.friendship}% (Lv.${progression.friendshipLevel})</strong>
+                      <strong class="tabular-nums">${stats.friendship}% · Lv.${progression.friendshipLevel}</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span>Achievements</span>
-                      <strong class="tabular-nums">${progression.unlockedAchievements.length}/${ACHIEVEMENTS.length}</strong>
+                      <strong class="tabular-nums">${progression.unlockedAchievements.length} / ${ACHIEVEMENTS.length}</strong>
                     </div>
                   </div>
 
@@ -2184,19 +2206,19 @@ export class GameUI {
                   <div class="keeper-id-stats-row">
                     <div class="keeper-stat-box">
                       <span>Player Lv.</span>
-                      <strong class="tabular-nums">Lv.${playerLvl.level} (${progression.playerXp} XP)</strong>
+                      <strong class="tabular-nums">Lv.${playerLvl.level} · ${progression.playerXp} XP</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span id="passport-pet-name-label">${petName} Lv.</span>
-                      <strong class="tabular-nums">Lv.${creatureLvl.level} (${progression.creatureXp} XP)</strong>
+                      <strong class="tabular-nums">Lv.${creatureLvl.level} · ${progression.creatureXp} XP</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span>Friendship</span>
-                      <strong class="tabular-nums">${stats.friendship}%</strong>
+                      <strong class="tabular-nums">${stats.friendship}% · Lv.${progression.friendshipLevel}</strong>
                     </div>
                     <div class="keeper-stat-box">
                       <span>Achievements</span>
-                      <strong class="tabular-nums">${progression.unlockedAchievements.length}/${ACHIEVEMENTS.length}</strong>
+                      <strong class="tabular-nums">${progression.unlockedAchievements.length} / ${ACHIEVEMENTS.length}</strong>
                     </div>
                   </div>
                   <div class="keeper-id-actions">
@@ -2229,6 +2251,11 @@ export class GameUI {
                     <button type="submit" class="btn-secondary-gold btn-sm" id="btn-save-pet-name">
                       <span>${t.account.petNameSaveBtn}</span>
                     </button>
+                  </div>
+                  <div class="pet-profile-mini-summary">
+                    <span>🔥 <strong>${petName}</strong> · Lv.${creatureLvl.level} (${creatureLvl.currentLevelXp}/${creatureLvl.nextLevelXp} XP)</span>
+                    <span>👑 ${cosmeticObj.name}</span>
+                    <span>📸 Selfies: ${progression.selfieCount || 0}</span>
                   </div>
                 </form>
 
@@ -2704,9 +2731,26 @@ export class GameUI {
         this.sound.playClick();
         this.setMode('settings');
       });
+    this.root
+      .querySelector('#hud-btn-mobile-nav')
+      ?.addEventListener('click', (e) => {
+        (e.currentTarget as HTMLElement).blur();
+        this.sound.playClick();
+        this.mobileNavOpen = !this.mobileNavOpen;
+        this.render();
+      });
+    this.root
+      .querySelector('#hud-btn-mobile-home')
+      ?.addEventListener('click', (e) => {
+        (e.currentTarget as HTMLElement).blur();
+        this.sound.playClick();
+        this.mobileNavOpen = false;
+        this.setMode('title');
+      });
     this.root.querySelector('#hud-btn-menu')?.addEventListener('click', (e) => {
       (e.currentTarget as HTMLElement).blur();
       this.sound.playClick();
+      this.mobileNavOpen = false;
       this.setMode('title');
     });
     this.root.querySelector('#hud-btn-mute')?.addEventListener('click', (e) => {
@@ -2781,11 +2825,14 @@ export class GameUI {
     this.bindZonePromptButton();
     this.bindVirtualJoystick();
 
-    this.root
-      .querySelector('#btn-jump-action')
-      ?.addEventListener('click', () => {
-        this.world.player.triggerJump();
-      });
+    const jumpBtn = this.root.querySelector<HTMLElement>('#btn-jump-action');
+    jumpBtn?.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.world.player.triggerJump();
+    });
+    jumpBtn?.addEventListener('click', () => {
+      this.world.player.triggerJump();
+    });
   }
 
   private bindSelfieStudioEvents(): void {
@@ -2854,9 +2901,10 @@ export class GameUI {
   }
 
   private bindVirtualJoystick(): void {
+    const zone = this.root.querySelector<HTMLElement>('#joystick-zone');
     const base = this.root.querySelector<HTMLElement>('#joystick-base');
     const stick = this.root.querySelector<HTMLElement>('#joystick-stick');
-    if (!base || !stick) return;
+    if (!zone || !base || !stick) return;
 
     let dragging = false;
     const maxRadius = 38;
@@ -2882,17 +2930,18 @@ export class GameUI {
       this.world.player.setJoystickVector(0, 0);
     };
 
-    base.addEventListener('pointerdown', (e) => {
+    zone.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
       dragging = true;
-      base.setPointerCapture(e.pointerId);
+      zone.setPointerCapture(e.pointerId);
       updateStick(e.clientX, e.clientY);
     });
-    base.addEventListener('pointermove', (e) => {
+    zone.addEventListener('pointermove', (e) => {
       if (!dragging) return;
       updateStick(e.clientX, e.clientY);
     });
-    base.addEventListener('pointerup', resetStick);
-    base.addEventListener('pointercancel', resetStick);
+    zone.addEventListener('pointerup', resetStick);
+    zone.addEventListener('pointercancel', resetStick);
   }
 
   private bindARWorldEvents(): void {

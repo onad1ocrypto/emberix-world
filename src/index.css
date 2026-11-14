@@ -588,28 +588,31 @@ button:disabled {
   left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 245px;
+  gap: 6px;
+  width: 236px;
   pointer-events: auto;
   z-index: 15;
 }
 
 .hud-creature-badge {
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.96));
+  gap: 9px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
   border: 2px solid rgba(251, 191, 36, 0.65);
-  border-radius: 999px;
-  padding: 5px 14px 5px 5px;
+  border-radius: 16px;
+  padding: 6px 10px 6px 6px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.48);
 }
 
 .hud-creature-meta {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .hud-name-line {
@@ -617,49 +620,67 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  width: 100%;
 }
 
 .hud-creature-name {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: #fffbeb;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hud-lvl-text {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--accent-gold);
+  flex-shrink: 0;
 }
 
 .hud-state-label {
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 800;
   padding: 2px 7px;
   border-radius: 999px;
   background-color: rgba(34, 197, 94, 0.25);
   color: #86efac;
   border: 1px solid rgba(74, 222, 128, 0.45);
+  flex-shrink: 0;
 }
 
 .hud-sub-meta {
   margin: 0;
-  font-size: 0.72rem;
+  width: 100%;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
 }
 
+.hud-bond-label {
+  font-weight: 700;
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+
 .btn-camera-focus-chip {
-  background-color: rgba(234, 88, 12, 0.85);
+  background-color: rgba(234, 88, 12, 0.88);
   color: #ffffff;
   border: 1px solid #fde047;
   border-radius: 999px;
-  padding: 1px 8px;
+  padding: 2px 8px;
   min-height: 20px;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* Glossy Pill Status Bars (Heart, Lightning, Smile, Star) */
@@ -667,7 +688,8 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 195px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .glossy-stat-pill {
@@ -1077,33 +1099,47 @@ button:disabled {
 }
 
 .joystick-base {
-  width: 98px;
-  height: 98px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(30, 41, 59, 0.55), rgba(15, 23, 42, 0.82));
-  border: 2.5px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.14), rgba(15, 23, 42, 0.28));
+  border: 1.5px solid rgba(253, 224, 71, 0.38);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    inset 0 0 8px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.joystick-base:active {
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.26), rgba(15, 23, 42, 0.42));
+  border-color: rgba(253, 224, 71, 0.65);
 }
 
 .joystick-stick {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffffff, #cbd5e1);
-  border: 2px solid #94a3b8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.52), rgba(226, 232, 240, 0.28));
+  border: 1.5px solid rgba(253, 224, 71, 0.52);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
   pointer-events: none;
 }
 
 .joystick-caption {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  color: #f8fafc;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  color: rgba(254, 240, 138, 0.85);
+  background: rgba(15, 23, 42, 0.32);
+  border: 1px solid rgba(253, 224, 71, 0.25);
+  padding: 1px 8px;
+  border-radius: 999px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
 }
 
 .btn-mobile-jump {
@@ -1113,14 +1149,22 @@ button:disabled {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #fb923c, #ea580c);
-  color: #ffffff;
-  border: 2.5px solid #fde047;
+  background: radial-gradient(circle at 50% 35%, rgba(251, 146, 60, 0.32), rgba(234, 88, 12, 0.42));
+  color: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(253, 224, 71, 0.48);
   font-weight: 800;
   box-shadow:
-    0 4px 0 #9a3412,
-    0 8px 20px rgba(0, 0, 0, 0.5);
+    0 4px 12px rgba(0, 0, 0, 0.22),
+    inset 0 1px 4px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 15;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-mobile-jump:active {
+  background: radial-gradient(circle at 50% 35%, rgba(251, 146, 60, 0.6), rgba(234, 88, 12, 0.72));
+  transform: scale(0.95);
 }
 
 /* ==========================================================================
@@ -2024,19 +2068,23 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.74rem;
+  gap: 8px;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: #fde047;
+  white-space: nowrap;
 }
 
 .keeper-status-pill {
   background-color: rgba(34, 197, 94, 0.22);
   border: 1px solid #4ade80;
   color: #86efac;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .keeper-id-body {
@@ -2046,64 +2094,76 @@ button:disabled {
 }
 
 .keeper-id-body .avatar-badge-svg {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
 }
 
 .keeper-id-details {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .keeper-id-name {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .keeper-id-title-badge {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #38bdf8;
 }
 
 .keeper-id-email {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
 .keeper-id-stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
 .keeper-stat-box {
-  background-color: rgba(9, 13, 26, 0.75);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background-color: rgba(9, 13, 26, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 10px;
-  padding: 8px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  text-align: center;
+  gap: 3px;
   font-size: 0.7rem;
   color: var(--text-secondary);
 }
 
 .keeper-stat-box strong {
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   color: #fde047;
+  white-space: nowrap;
 }
 
 .keeper-id-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.keeper-id-actions > button {
+  flex: 1 1 auto;
+  justify-content: center;
 }
 
 .saved-accounts-box {
@@ -2648,16 +2708,29 @@ button:disabled {
   pointer-events: auto;
 }
 
-.btn-dock-extras-toggle {
+.btn-dock-extras-toggle,
+.hud-mobile-quick-bar {
   display: none;
 }
 
+.btn-mobile-jump {
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.05;
+}
+
+.jump-arrow-icon {
+  font-size: 0.72rem;
+  line-height: 1;
+  opacity: 0.92;
+}
+
 @media (max-width: 768px) {
-  /* Title Screen Mobile Layout: Top Emblem + Open Center 3D Dino Stage + Bottom 2-Column Menu Dock */
+  /* Title Screen Mobile Layout: Top Emblem + Open Center 3D Dino Stage + Symmetrical Bottom Menu Dock */
   .title-screen-layout {
     align-items: stretch;
     justify-content: center;
-    padding: 50px 10px 10px;
+    padding: 48px 10px 10px;
   }
 
   .title-top-left-badge {
@@ -2735,7 +2808,7 @@ button:disabled {
   }
 
   .title-center-column {
-    width: min(366px, 95vw);
+    width: min(370px, 95vw);
     height: 100%;
     margin: 0 auto;
     justify-content: space-between;
@@ -2743,46 +2816,69 @@ button:disabled {
   }
 
   .title-emblem-svg {
-    max-width: 235px;
+    max-width: 228px;
     margin-top: 0;
   }
 
-  /* Compact 2-Column Mobile Bottom Menu Dock so the center 3D Dino Stage stays wide open */
+  /* Neat, 100% Symmetrical Mobile Front-Page Menu Dock (Zero empty grid gaps!) */
   .menu-button-stack {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 7px;
     width: 100%;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(9, 13, 26, 0.86));
-    backdrop-filter: blur(8px);
-    padding: 8px;
-    border-radius: 18px;
-    border: 1.5px solid rgba(251, 191, 36, 0.42);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(9, 13, 26, 0.92));
+    backdrop-filter: blur(10px);
+    padding: 9px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(251, 191, 36, 0.48);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
   }
 
+  /* Flatten .menu-sub-pair so all 6 buttons align cleanly in the 2-column grid */
+  .menu-sub-pair {
+    display: contents;
+  }
+
+  /* Row 1: Primary 3D World CTA (Full Width) */
   .menu-button-stack > #btn-play-3d {
     grid-column: 1 / -1;
-    min-height: 42px;
-    font-size: 0.94rem;
-    padding: 5px 14px 5px 6px;
+    min-height: 44px;
+    font-size: 0.95rem;
+    padding: 5px 14px 5px 7px;
   }
 
-  .menu-button-stack > .btn-game-glossy:not(#btn-play-3d) {
-    min-height: 38px;
-    font-size: 0.74rem;
+  /* Row 2: Enter AR World CTA (Full Width for balanced 2-row hero + 2x2 grid below) */
+  .menu-button-stack > #btn-enter-ar {
+    grid-column: 1 / -1;
+    min-height: 40px;
+    font-size: 0.86rem;
+    padding: 4px 14px 4px 7px;
+  }
+
+  /* Rows 3 & 4: Clean 2x2 Symmetrical Grid (Collection | Encyclopedia, AR Card | Settings) */
+  .menu-button-stack > #btn-collection,
+  .menu-button-stack > #btn-encyclopedia,
+  .menu-sub-pair > .btn-sub-half {
+    min-height: 40px;
+    font-size: 0.73rem;
     padding: 4px 8px 4px 5px;
     gap: 6px;
   }
 
-  .menu-button-stack .btn-circle-icon {
-    width: 27px;
-    height: 27px;
+  .menu-button-stack .btn-circle-icon,
+  .menu-sub-pair .btn-sub-half .btn-circle-icon {
+    width: 26px;
+    height: 26px;
   }
 
   .menu-button-stack #btn-play-3d .btn-circle-icon {
-    width: 31px;
-    height: 31px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .menu-button-stack #btn-enter-ar .btn-circle-icon {
+    width: 28px;
+    height: 28px;
   }
 
   .menu-button-stack .btn-icon {
@@ -2790,33 +2886,18 @@ button:disabled {
     height: 15px;
   }
 
-  .menu-button-stack .btn-glossy-label {
+  .menu-button-stack .btn-glossy-label,
+  .menu-sub-pair .btn-sub-half .btn-glossy-label {
     padding-right: 2px;
     line-height: 1.12;
   }
 
-  .menu-sub-pair {
-    grid-column: 1 / -1;
-    gap: 6px;
-  }
-
-  .btn-sub-half {
-    min-height: 35px;
-    font-size: 0.74rem;
-    padding: 3px 8px 3px 5px;
-  }
-
-  .btn-sub-half .btn-circle-icon {
-    width: 25px;
-    height: 25px;
-  }
-
-  /* Compact Quick Action Pill right below EMBER on Mobile Title Screen */
+  /* Compact Quick Action Pill right above the Bottom Menu Dock on Mobile Title Screen */
   .title-showcase-callout {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 214px;
+    bottom: 206px;
     flex-direction: row;
     align-items: center;
     justify-content: center;
@@ -2843,138 +2924,272 @@ button:disabled {
     display: none;
   }
 
-  .minimap-hud-cluster {
-    gap: 3px;
-  }
-
-  .minimap-container {
-    width: 68px;
-    height: 68px;
-  }
-
-  .minimap-live-readout {
-    min-width: 72px;
-    padding: 2px 5px;
-    border-radius: 7px;
-  }
-
-  .minimap-zone-name {
-    font-size: 0.52rem;
-  }
-
-  .minimap-coords-text {
-    font-size: 0.5rem;
-  }
-
-  /* Compact Top-Left Creature Status on Phone so 3D game view stays wide open */
+  /* ========================================================================
+     3D WORLD TOP HUD ON MOBILE — UNCLUTTERED & COLLAPSIBLE
+     ======================================================================== */
   .hud-top-left {
     top: 8px;
     left: 8px;
-    width: 178px;
-    gap: 5px;
-  }
-
-  .hud-creature-badge {
-    padding: 4px 8px 4px 4px;
-    gap: 6px;
-  }
-
-  .hud-ember-avatar-svg {
-    width: 30px;
-    height: 30px;
-  }
-
-  .hud-creature-name {
-    font-size: 0.78rem;
-  }
-
-  .hud-lvl-text {
-    font-size: 0.68rem;
-  }
-
-  .hud-state-label {
-    font-size: 0.58rem;
-    padding: 1px 5px;
-  }
-
-  .hud-sub-meta {
-    font-size: 0.64rem;
+    width: 184px;
     gap: 4px;
   }
 
+  .hud-creature-badge {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 14px;
+    padding: 4px 7px 4px 5px;
+    gap: 6px;
+  }
+
+  .hud-creature-badge .avatar-badge-svg {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+  }
+
+  .hud-creature-meta {
+    gap: 2px;
+  }
+
+  .hud-creature-name {
+    font-size: 0.72rem;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .hud-lvl-text {
+    font-size: 0.62rem;
+  }
+
+  .hud-state-label {
+    font-size: 0.52rem;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+
+  .hud-sub-meta {
+    font-size: 0.56rem;
+    gap: 4px;
+    justify-content: space-between;
+    width: 100%;
+    white-space: nowrap;
+  }
+
   .btn-camera-focus-chip {
-    padding: 1px 6px;
-    font-size: 0.6rem;
-    min-height: 18px;
+    padding: 1px 5px;
+    font-size: 0.52rem;
+    min-height: 16px;
+    white-space: nowrap;
   }
 
   .glossy-bars-stack {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
-    width: 176px;
+    gap: 3px;
+    width: 100%;
   }
 
   .glossy-stat-pill {
-    height: 16px;
+    height: 15px;
     padding: 1px 4px 1px 2px;
     gap: 3px;
   }
 
   .stat-pill-icon {
-    width: 14px;
-    height: 14px;
-    font-size: 0.58rem;
-  }
-
-  .stat-track {
-    height: 11px;
-  }
-
-  .stat-overlay-val {
+    width: 13px;
+    height: 13px;
     font-size: 0.54rem;
   }
 
-  /* Compact Top-Right Navigation Pills on Phone */
+  .stat-track {
+    height: 10px;
+  }
+
+  .stat-overlay-val {
+    font-size: 0.52rem;
+  }
+
+  /* Top-Right: Only Live Radar + Compact [☰ Menu] & [🏠] Quick Bar by default! */
   .hud-top-right {
     top: 8px;
     right: 8px;
-    max-width: 50vw;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 5px;
+    max-width: calc(100vw - 200px);
+    z-index: 40;
   }
 
-  .hud-nav-pills {
-    gap: 4px;
+  .hud-mobile-quick-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
   }
 
-  .btn-hud-nav,
-  .btn-hud-icon {
-    padding: 3px 6px;
-    min-height: 25px;
-    font-size: 0.64rem;
+  .btn-mobile-nav-toggle {
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+    color: #fde047;
+    border: 1.5px solid rgba(251, 191, 36, 0.65);
+    padding: 4px 9px;
+    min-height: 28px;
+    font-size: 0.66rem;
+    font-weight: 800;
     border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
   }
 
-  /* Ultra-Compact Single-Row Bottom Pet Control Bar on Phone */
+  .btn-mobile-nav-toggle.nav-toggle-active {
+    background: linear-gradient(180deg, #f59e0b, #b45309);
+    color: #fffbeb;
+    border-color: #fef08a;
+  }
+
+  .btn-mobile-home-quick {
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    font-size: 0.78rem;
+    border-radius: 50%;
+  }
+
+  /* Hide the 9 nav pills on mobile unless the player taps [☰ Menu] */
+  .hud-top-right:not(.mobile-nav-open) .hud-nav-pills {
+    display: none;
+  }
+
+  /* Clean 2-Column Dropdown Menu Popover when [☰ Menu] is opened on mobile */
+  .hud-top-right.mobile-nav-open .hud-nav-pills {
+    position: fixed;
+    top: 98px;
+    right: 8px;
+    width: min(268px, 86vw);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 10px;
+    background: linear-gradient(180deg, rgba(16, 14, 28, 0.97), rgba(9, 13, 26, 0.99));
+    border: 2px solid rgba(251, 191, 36, 0.75);
+    border-radius: 16px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8);
+    z-index: 45;
+  }
+
+  .hud-top-right.mobile-nav-open .hud-nav-pills #hud-btn-menu {
+    display: none;
+  }
+
+  .hud-top-right.mobile-nav-open .hud-nav-pills .btn-hud-nav,
+  .hud-top-right.mobile-nav-open .hud-nav-pills .btn-hud-icon {
+    width: 100%;
+    min-height: 34px;
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    justify-content: center;
+  }
+
+  .minimap-hud-cluster {
+    gap: 2px;
+  }
+
+  .minimap-container {
+    width: 60px;
+    height: 60px;
+  }
+
+  .minimap-live-readout {
+    min-width: 66px;
+    padding: 2px 5px;
+    border-radius: 7px;
+  }
+
+  .minimap-zone-name {
+    font-size: 0.48rem;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .minimap-coords-text {
+    font-size: 0.46rem;
+  }
+
+  /* Compact Proximity Zone Prompt positioned cleanly below top HUD so it never overlaps bars or radar */
+  .zone-prompt-wrapper {
+    top: 96px;
+    width: calc(100vw - 16px);
+    max-width: 374px;
+    z-index: 16;
+  }
+
+  .zone-prompt-card {
+    width: 100%;
+    justify-content: space-between;
+    padding: 3px 6px 3px 10px;
+    gap: 6px;
+    border-width: 1.5px;
+  }
+
+  .zone-title {
+    font-size: 0.62rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  .btn-zone-action {
+    display: block;
+    text-align: center;
+    padding: 4px 8px;
+    min-height: 24px;
+    font-size: 0.58rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 65%;
+    flex-shrink: 0;
+  }
+
+  /* ========================================================================
+     ERGONOMIC THUMB-ZONE MOVE JOYSTICK & JUMP BUTTON + COMPACT CARE DOCK
+     ======================================================================== */
   .bottom-dock-wrapper {
     bottom: 6px;
     width: calc(100vw - 12px);
     gap: 4px;
   }
 
+  /* Center the dock toggle pills so left & right thumb zones stay 100% clear! */
   .dock-top-bar {
+    justify-content: center;
     gap: 6px;
   }
 
   .pet-feedback-toast {
-    padding: 3px 10px;
+    display: none;
+  }
+
+  .pet-feedback-toast.toast-pop {
+    display: block;
+    position: fixed;
+    top: 138px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 12px;
     font-size: 0.68rem;
-    max-width: 54%;
+    max-width: 88vw;
+    z-index: 25;
   }
 
   .btn-dock-toggle {
-    padding: 3px 9px;
+    padding: 3px 10px;
     min-height: 24px;
-    font-size: 0.65rem;
+    font-size: 0.66rem;
     white-space: nowrap;
   }
 
@@ -3042,35 +3257,54 @@ button:disabled {
     white-space: nowrap;
   }
 
-  /* Lower Move Joystick & Jump Button into comfortable bottom thumb corners */
+  /* Ergonomic & Semi-Transparent Left-Thumb Move Joystick & Right-Thumb Jump Button */
   .joystick-zone {
-    bottom: 82px;
-    left: 10px;
-    gap: 2px;
+    bottom: 112px;
+    left: 18px;
+    padding: 6px;
+    gap: 3px;
   }
 
   .joystick-base {
-    width: 72px;
-    height: 72px;
-    border-width: 2px;
+    width: 86px;
+    height: 86px;
+    border: 1.5px solid rgba(253, 224, 71, 0.36);
+    background: radial-gradient(circle, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0.26));
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.18),
+      inset 0 0 8px rgba(255, 255, 255, 0.08);
   }
 
   .joystick-stick {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.5), rgba(226, 232, 240, 0.25));
+    border: 1.5px solid rgba(253, 224, 71, 0.5);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
 
   .joystick-caption {
     font-size: 0.64rem;
+    font-weight: 800;
+    color: rgba(254, 240, 138, 0.82);
+    background: rgba(15, 23, 42, 0.28);
+    border: 1px solid rgba(253, 224, 71, 0.22);
+    padding: 1px 8px;
+    border-radius: 999px;
   }
 
   .btn-mobile-jump {
-    bottom: 88px;
-    right: 10px;
-    width: 56px;
-    height: 56px;
-    font-size: 0.76rem;
-    border-width: 2px;
+    bottom: 120px;
+    right: 18px;
+    width: 72px;
+    height: 72px;
+    font-size: 0.8rem;
+    border: 1.5px solid rgba(253, 224, 71, 0.45);
+    background: radial-gradient(circle at 50% 35%, rgba(251, 146, 60, 0.3), rgba(234, 88, 12, 0.4));
+    color: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.2),
+      inset 0 1px 4px rgba(255, 255, 255, 0.18);
   }
 
   .ar-card-showcase-grid,
@@ -3081,6 +3315,135 @@ button:disabled {
   .dance-settings-grid,
   .language-segmented-group {
     grid-template-columns: 1fr;
+  }
+
+  /* Tidy Profile / Keeper Account Modal on Mobile */
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal-card {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .modal-header {
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .modal-title {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .modal-subtitle {
+    font-size: 0.74rem;
+    line-height: 1.35;
+  }
+
+  .account-modal-grid {
+    gap: 12px;
+  }
+
+  .account-left-col,
+  .account-right-col {
+    gap: 12px;
+  }
+
+  .keeper-id-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .keeper-id-header {
+    font-size: 0.66rem;
+    letter-spacing: 0.04em;
+  }
+
+  .keeper-status-pill {
+    font-size: 0.62rem;
+    padding: 2px 8px;
+  }
+
+  .keeper-id-body {
+    gap: 10px;
+  }
+
+  .keeper-id-body .avatar-badge-svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .keeper-id-name {
+    font-size: 1.02rem;
+  }
+
+  .keeper-id-title-badge {
+    font-size: 0.74rem;
+  }
+
+  .keeper-id-email {
+    font-size: 0.7rem;
+  }
+
+  .keeper-id-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .keeper-stat-box {
+    padding: 6px 8px;
+    font-size: 0.66rem;
+  }
+
+  .keeper-stat-box strong {
+    font-size: 0.76rem;
+  }
+
+  .keeper-id-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .keeper-id-actions > button {
+    width: 100%;
+    min-height: 36px;
+    font-size: 0.78rem;
+  }
+
+  .pet-name-editor-box,
+  .saved-accounts-box,
+  .keeper-customize-box,
+  .auth-form {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .pet-name-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .pet-name-input-row > button {
+    width: 100%;
+    min-height: 36px;
+    justify-content: center;
+  }
+
+  .pet-profile-mini-summary {
+    font-size: 0.68rem;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .pet-profile-mini-summary > span {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 999px;
+    padding: 2px 8px;
   }
 
   .selfie-screen-layout {
@@ -3103,10 +3466,6 @@ button:disabled {
     width: 100%;
     max-height: 58vh;
     padding: 10px 12px;
-  }
-
-  .keeper-id-stats-row {
-    grid-template-columns: repeat(2, 1fr);
   }
 
   .ar-right-action-column {
