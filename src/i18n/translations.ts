@@ -167,7 +167,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
     menu: {
       guestKeeper: 'Guest Keeper',
       accountBadge: '✓ Profile',
-      registerLogin: 'Profile / Login',
+      registerLogin: 'Profile',
       playerPrefix: 'Player',
       play3dWorld: 'Play 3D World',
       enterArWorld: 'Enter AR World',
@@ -312,7 +312,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
     menu: {
       guestKeeper: 'Keeper Tamu',
       accountBadge: '✓ Profil',
-      registerLogin: 'Profil / Login',
+      registerLogin: 'Profil',
       playerPrefix: 'Player',
       play3dWorld: 'Main Dunia 3D',
       enterArWorld: 'Masuk Dunia AR',
@@ -457,7 +457,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
     menu: {
       guestKeeper: '游客驯龙师',
       accountBadge: '✓ 个人资料',
-      registerLogin: '资料 / 登录',
+      registerLogin: '资料',
       playerPrefix: '玩家',
       play3dWorld: '畅玩 3D 世界',
       enterArWorld: '进入 AR 世界',
