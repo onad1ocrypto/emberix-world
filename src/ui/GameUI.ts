@@ -96,8 +96,6 @@ export class GameUI {
 
     const initLang = storageManager.getState().settings.language;
     this.feedbackBannerText = getTranslation(initLang).hud.welcomeToast;
-    this.feedbackVisible = true;
-    this.scheduleFeedbackHide(4500);
 
     this.bindGlobalShortcuts();
 
@@ -183,6 +181,7 @@ export class GameUI {
   }
 
   public setMode(nextMode: AppMode): void {
+    const enteredFromTitle = this.mode === 'title';
     if (this.mode === 'ar' && nextMode !== 'ar') {
       this.arTracker.stop();
     }
@@ -230,6 +229,15 @@ export class GameUI {
 
     if (nextMode === 'playing') {
       this.world.updateLiveMinimap();
+      if (enteredFromTitle) {
+        // greet the player on the way into the world, then fade like any message
+        this.feedbackBannerText = getTranslation(
+          storageManager.getState().settings.language,
+        ).hud.welcomeToast;
+        this.feedbackVisible = true;
+        this.applyFeedbackVisibility();
+        this.scheduleFeedbackHide(4500);
+      }
     }
 
     if (nextMode === 'selfie') {
