@@ -238,10 +238,15 @@ export function applyHungerTimerTick(
   const crossedIntoStarving =
     prevState !== 'starving' && nextState === 'starving';
   const isHungry = nextState !== 'satisfied';
+  // Remind the player once per 6-point band. Comparing bands instead of testing
+  // `hunger % 6 === 0` keeps the cadence identical regardless of parity: hunger
+  // drops by 2 per tick, so an odd value would otherwise skip every multiple of 6.
+  const notifyBand = Math.floor(nextHunger / 6);
+  const previousBand = Math.floor(prevHunger / 6);
   const shouldNotifyHungry =
     crossedIntoHungry ||
     crossedIntoStarving ||
-    (isHungry && nextHunger < prevHunger && nextHunger % 6 === 0);
+    (isHungry && nextHunger < prevHunger && notifyBand !== previousBand);
 
   return {
     stats: nextStats,

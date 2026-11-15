@@ -525,6 +525,19 @@ test('background hunger timer periodically decreases hunger and triggers hungry 
   assert.equal(tickStarve.crossedIntoStarving, true);
   assert.equal(tickStarve.shouldNotifyHungry, true);
 
+  // 3b. Periodic reminders must fire on odd hunger values too (hunger drops by 2,
+  // so `hunger % 6 === 0` never matched an odd starting value)
+  const oddHunger = { ...DEFAULT_STATS, hunger: 25, happiness: 80, energy: 80, isSleeping: false };
+  const oddTick = applyHungerTimerTick(oddHunger, 15);
+  assert.equal(oddTick.currentHunger, 23);
+  assert.equal(oddTick.isHungry, true);
+  assert.equal(oddTick.shouldNotifyHungry, true);
+
+  // same band, so no reminder
+  const sameBand = applyHungerTimerTick({ ...oddHunger, hunger: 27 }, 15);
+  assert.equal(sameBand.currentHunger, 25);
+  assert.equal(sameBand.shouldNotifyHungry, false);
+
   // 4. StorageManager.tickRealtimeDecay and subscribeHunger integration
   const mgr = new StorageManager();
   const receivedNotifications: number[] = [];
