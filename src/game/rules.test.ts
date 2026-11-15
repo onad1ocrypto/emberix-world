@@ -490,7 +490,38 @@ test('background hunger timer periodically decreases hunger and triggers hungry 
   unsub();
 });
 
+test('feed action triggers celebratory golden spark burst descriptors and slight jump animation arc', async () => {
+  const {
+    buildFeedGoldenSparkBurst,
+    computeFeedJumpOffset,
+    FEED_GOLDEN_SPARK_COUNT,
+    FEED_JUMP_PEAK_OFFSET,
+  } = await import('./rules');
 
+  // 1. Golden spark burst produces a full 360-degree celebratory halo of golden sparks
+  const sparks = buildFeedGoldenSparkBurst();
+  assert.equal(sparks.length, FEED_GOLDEN_SPARK_COUNT);
+  for (const s of sparks) {
+    assert.ok(s.radialSpeed > 0.35 && s.radialSpeed < 1.2);
+    assert.ok(s.upwardSpeed > 0.75 && s.upwardSpeed < 1.8);
+    assert.ok(s.maxLife >= 0.85 && s.maxLife <= 1.45);
+    assert.ok(
+      [0xffd700, 0xffab00, 0xfde047, 0xfffbeb, 0xf59e0b].includes(s.colorHex),
+      `Expected golden spark palette color, got ${s.colorHex.toString(16)}`,
+    );
+  }
 
-
+  // 2. Slight celebratory jump animation curve rises cleanly above 0 and peaks at FEED_JUMP_PEAK_OFFSET
+  assert.equal(computeFeedJumpOffset(0), 0);
+  const peakHop = computeFeedJumpOffset(0.26);
+  assert.ok(
+    Math.abs(peakHop - FEED_JUMP_PEAK_OFFSET) < 0.005,
+    `Expected primary hop peak near ${FEED_JUMP_PEAK_OFFSET}m, got ${peakHop}`,
+  );
+  const secondBounce = computeFeedJumpOffset(0.72);
+  assert.ok(
+    secondBounce > 0.07 && secondBounce < 0.095,
+    `Expected secondary joyful bounce around 0.085m, got ${secondBounce}`,
+  );
+});
 

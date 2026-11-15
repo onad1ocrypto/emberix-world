@@ -1,4 +1,10 @@
 import * as THREE from 'three';
+import {
+  buildFeedGoldenSparkBurst,
+  computeFeedJumpOffset,
+  FEED_CELEBRATION_DURATION_SEC,
+  FEED_GOLDEN_SPARK_COUNT,
+} from '../game/rules';
 import type { CosmeticId, EmberAnimationState } from '../types';
 
 interface ParticleItem {
@@ -8,6 +14,15 @@ interface ParticleItem {
   maxLife: number;
   active: boolean;
   isHeart: boolean;
+}
+
+interface GoldenSparkItem {
+  mesh: THREE.Mesh;
+  velocity: THREE.Vector3;
+  life: number;
+  maxLife: number;
+  baseScale: number;
+  active: boolean;
 }
 
 /**
@@ -76,6 +91,15 @@ export class EmberModel extends THREE.Group {
   private particles: ParticleItem[] = [];
   private particleGroup = new THREE.Group();
 
+  // Dedicated celebratory Golden Sparks burst around EMBER when 'Feed' is pressed
+  private feedSparks: GoldenSparkItem[] = [];
+  private feedSparkGroup = new THREE.Group();
+  private feedSparkPoints!: THREE.Points;
+  private feedSparkPositions = new Float32Array(FEED_GOLDEN_SPARK_COUNT * 3);
+  private feedSparkColors = new Float32Array(FEED_GOLDEN_SPARK_COUNT * 3);
+  private feedCelebrationTimer = 0;
+  private currentFeedJumpOffset = 0;
+
   // Continuous Magical Fire Embers around EMBER using THREE.Points
   private readonly fireEmberCount = 76;
   private fireEmberPoints!: THREE.Points;
@@ -93,6 +117,7 @@ export class EmberModel extends THREE.Group {
     this.buildDragonHierarchy();
     this.buildCosmetics();
     this.buildReactionParticles();
+    this.buildFeedGoldenSparks();
     this.buildFireEmberPoints();
     this.setCosmetic('crown');
   }
@@ -1659,6 +1684,111 @@ export class EmberModel extends THREE.Group {
     }
   }
 
+  /**
+   * Builds a celebratory golden spark burst system around EMBER triggered when 'Feed' is pressed.
+   * Combines gleaming 3D golden diamond/star sparkler meshes and an additive golden spark halo.
+   */
+  private buildFeedGoldenSparks(): void {
+    this.feedSparkGroup.name = 'EmberFeedGoldenSparks';
+    this.add(this.feedSparkGroup);
+
+    const sparkGeo = new THREE.OctahedronGeometry(0.038, 0);
+    sparkGeo.scale(0.68, 1.45, 0.68); // Elongated 4-point golden diamond spark
+
+    for (let i = 0; i < FEED_GOLDEN_SPARK_COUNT; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffd700,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const mesh = new THREE.Mesh(sparkGeo, mat);
+      mesh.visible = false;
+      mesh.raycast = () => {};
+      this.feedSparkGroup.add(mesh);
+      this.feedSparks.push({
+        mesh,
+        velocity: new THREE.Vector3(),
+        life: 0,
+        maxLife: 1.1,
+        baseScale: 1.0,
+        active: false,
+      });
+    }
+
+    const ptGeo = new THREE.BufferGeometry();
+    ptGeo.setAttribute(
+      'position',
+      new THREE.BufferAttribute(this.feedSparkPositions, 3),
+    );
+    ptGeo.setAttribute(
+      'color',
+      new THREE.BufferAttribute(this.feedSparkColors, 3),
+    );
+    const ptMat = new THREE.PointsMaterial({
+      size: 0.135,
+      map: this.createEmberParticleTexture(),
+      vertexColors: true,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    this.feedSparkPoints = new THREE.Points(ptGeo, ptMat);
+    this.feedSparkPoints.name = 'EmberFeedGoldenSparkPoints';
+    this.feedSparkPoints.visible = false;
+    this.feedSparkPoints.frustumCulled = false;
+    this.feedSparkPoints.raycast = () => {};
+    this.feedSparkGroup.add(this.feedSparkPoints);
+  }
+
+  public triggerFeedGoldenSparks(): void {
+    this.feedCelebrationTimer = FEED_CELEBRATION_DURATION_SEC;
+    const descriptors = buildFeedGoldenSparkBurst(this.feedSparks.length);
+
+    for (let i = 0; i < this.feedSparks.length; i++) {
+      const item = this.feedSparks[i];
+      const desc = descriptors[i];
+      item.active = true;
+      item.life = 0;
+      item.maxLife = desc.maxLife;
+      item.baseScale = desc.scale;
+      item.mesh.visible = true;
+
+      const mat = item.mesh.material as THREE.MeshBasicMaterial;
+      mat.color.setHex(desc.colorHex);
+      mat.opacity = 1;
+
+      const startX = Math.cos(desc.angle) * desc.startRadius;
+      const startZ = Math.sin(desc.angle) * desc.startRadius;
+      item.mesh.position.set(startX, desc.startY, startZ);
+      item.mesh.rotation.set(i * 0.4, desc.angle, (i % 3) * 0.25);
+
+      const vx = Math.cos(desc.angle) * desc.radialSpeed;
+      const vz = Math.sin(desc.angle) * desc.radialSpeed;
+      item.velocity.set(vx, desc.upwardSpeed, vz);
+
+      const idx3 = i * 3;
+      this.feedSparkPositions[idx3] = startX;
+      this.feedSparkPositions[idx3 + 1] = desc.startY;
+      this.feedSparkPositions[idx3 + 2] = startZ;
+
+      const c = new THREE.Color(desc.colorHex);
+      this.feedSparkColors[idx3] = c.r;
+      this.feedSparkColors[idx3 + 1] = c.g;
+      this.feedSparkColors[idx3 + 2] = c.b;
+    }
+
+    this.feedSparkPoints.visible = true;
+    const ptMat = this.feedSparkPoints.material as THREE.PointsMaterial;
+    ptMat.opacity = 1.0;
+    const geo = this.feedSparkPoints.geometry;
+    (geo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    (geo.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
+  }
+
   private createEmberParticleTexture(): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
@@ -1832,11 +1962,27 @@ export class EmberModel extends THREE.Group {
     return this.currentAnim;
   }
 
+  public getActiveFeedSparkCount(): number {
+    let count = 0;
+    for (const s of this.feedSparks) {
+      if (s.active) count++;
+    }
+    return count;
+  }
+
+  public getFeedJumpOffset(): number {
+    return this.currentFeedJumpOffset;
+  }
+
+  public getFeedCelebrationTimer(): number {
+    return Math.max(0, this.feedCelebrationTimer);
+  }
+
   public playAnimation(
     state: EmberAnimationState,
     durationSeconds = 0,
   ): void {
-    if (this.currentAnim !== state) {
+    if (this.currentAnim !== state || durationSeconds > 0) {
       this.currentAnim = state;
       this.animTime = 0;
     }
@@ -1844,14 +1990,21 @@ export class EmberModel extends THREE.Group {
       this.oneShotTimer = durationSeconds;
       this.spawnReactionBurst(state);
     }
+    if (state === 'eating') {
+      this.currentFeedJumpOffset = computeFeedJumpOffset(0);
+    }
   }
 
   public spawnReactionBurst(state: EmberAnimationState): void {
+    if (state === 'eating') {
+      this.triggerFeedGoldenSparks();
+    }
+
     const primaryColor =
       state === 'happy'
         ? 0xff4081
         : state === 'eating'
-          ? 0xffab00
+          ? 0xffd700
           : state === 'sleeping'
             ? 0x60a5fa
             : state === 'dancing'
@@ -1860,13 +2013,19 @@ export class EmberModel extends THREE.Group {
 
     let spawned = 0;
     for (const p of this.particles) {
-      if (spawned >= 12) break;
+      if (spawned >= 14) break;
       p.active = true;
       p.life = 0;
       p.maxLife = 0.85 + Math.random() * 0.5;
       p.mesh.visible = true;
       (p.mesh.material as THREE.MeshBasicMaterial).color.setHex(
-        p.isHeart && state === 'happy' ? 0xf43f5e : primaryColor,
+        state === 'eating'
+          ? spawned % 2 === 0
+            ? 0xffd700
+            : 0xffab00
+          : p.isHeart && state === 'happy'
+            ? 0xf43f5e
+            : primaryColor,
       );
       (p.mesh.material as THREE.MeshBasicMaterial).opacity = 1;
       const side = spawned % 2 === 0 ? -1 : 1;
@@ -1892,7 +2051,15 @@ export class EmberModel extends THREE.Group {
       if (this.oneShotTimer <= 0 && this.currentAnim !== 'sleeping') {
         this.currentAnim = 'idle';
         this.animTime = 0;
+        this.currentFeedJumpOffset = 0;
       }
+    }
+
+    if (this.feedCelebrationTimer > 0) {
+      this.feedCelebrationTimer = Math.max(
+        0,
+        this.feedCelebrationTimer - clampedDt,
+      );
     }
 
     // Update orbiting aura if visible
@@ -1919,6 +2086,52 @@ export class EmberModel extends THREE.Group {
       (p.mesh.material as THREE.MeshBasicMaterial).opacity = ratio;
     }
 
+    // Update celebratory Golden Sparks burst around EMBER ('Feed' button feedback)
+    let anyFeedSparkActive = false;
+    for (let i = 0; i < this.feedSparks.length; i++) {
+      const s = this.feedSparks[i];
+      if (!s.active) continue;
+      s.life += clampedDt;
+      if (s.life >= s.maxLife) {
+        s.active = false;
+        s.mesh.visible = false;
+        continue;
+      }
+      anyFeedSparkActive = true;
+      // Gentle gravity arc after upward celebratory burst
+      s.velocity.y -= 1.25 * clampedDt;
+      s.mesh.position.addScaledVector(s.velocity, clampedDt);
+      s.mesh.rotation.y += clampedDt * 7.5;
+      s.mesh.rotation.z += clampedDt * 4.2;
+
+      const lifeRatio = 1 - s.life / s.maxLife;
+      const twinkle = 0.78 + 0.22 * Math.sin(this.animTime * 22 + i * 1.3);
+      s.mesh.scale.setScalar(s.baseScale * (0.35 + lifeRatio * 0.95) * twinkle);
+      (s.mesh.material as THREE.MeshBasicMaterial).opacity =
+        Math.min(1, lifeRatio * 1.35) * twinkle;
+
+      const idx3 = i * 3;
+      this.feedSparkPositions[idx3] = s.mesh.position.x;
+      this.feedSparkPositions[idx3 + 1] = s.mesh.position.y;
+      this.feedSparkPositions[idx3 + 2] = s.mesh.position.z;
+    }
+
+    if (this.feedSparkPoints) {
+      if (anyFeedSparkActive) {
+        this.feedSparkPoints.visible = true;
+        const ptMat = this.feedSparkPoints.material as THREE.PointsMaterial;
+        ptMat.opacity = Math.min(
+          1,
+          (this.feedCelebrationTimer / FEED_CELEBRATION_DURATION_SEC) * 1.25,
+        );
+        const geo = this.feedSparkPoints.geometry;
+        (geo.getAttribute('position') as THREE.BufferAttribute).needsUpdate =
+          true;
+      } else if (this.feedSparkPoints.visible) {
+        this.feedSparkPoints.visible = false;
+      }
+    }
+
     // Update THREE.Points magical fire embers around EMBER
     this.updateFireEmberPoints(clampedDt);
 
@@ -1934,14 +2147,16 @@ export class EmberModel extends THREE.Group {
       0.92 + Math.cos(this.animTime * 21) * 0.12,
     );
 
-    // Pulse ground magic ring during happy / dancing states
+    // Pulse ground magic ring during happy / dancing / jump / eating (golden celebration) states
     const ringMat = this.happyMagicRing.material as THREE.MeshBasicMaterial;
     if (
       this.currentAnim === 'happy' ||
       this.currentAnim === 'dancing' ||
-      this.currentAnim === 'jump'
+      this.currentAnim === 'jump' ||
+      this.currentAnim === 'eating'
     ) {
-      ringMat.opacity = 0.55 + Math.sin(this.animTime * 8) * 0.25;
+      ringMat.color.setHex(this.currentAnim === 'eating' ? 0xffd700 : 0xffb300);
+      ringMat.opacity = 0.58 + Math.sin(this.animTime * 8) * 0.25;
       this.happyMagicRing.scale.setScalar(
         1 + Math.sin(this.animTime * 6) * 0.15,
       );
@@ -2235,10 +2450,19 @@ export class EmberModel extends THREE.Group {
 
       case 'eating': {
         const chomp = t * 11;
-        this.rootPivot.position.y = 0.41;
-        this.bodyGroup.rotation.x = 0.16;
-        this.headGroup.rotation.x = 0.14 + Math.sin(chomp) * 0.16;
+        const jumpOffset = computeFeedJumpOffset(t);
+        this.currentFeedJumpOffset = jumpOffset;
+
+        // Slight celebratory jump animation when 'Feed' is pressed (+0.16m initial hop + secondary bounce)
+        this.rootPivot.position.y = 0.46 + jumpOffset;
+        this.bodyGroup.rotation.x = 0.14 - jumpOffset * 0.55;
+        this.headGroup.rotation.x = 0.12 + Math.sin(chomp) * 0.16;
         this.jawGroup.rotation.x = 0.24 + Math.abs(Math.sin(chomp)) * 0.32;
+
+        // Happy wing flutter during the celebratory feed jump
+        const wingFlutter = t < 0.95 ? Math.sin(t * 20) * 0.42 : Math.sin(chomp * 0.5) * 0.18;
+        this.leftWingPivot.rotation.y = 0.24 + wingFlutter;
+        this.rightWingPivot.rotation.y = -0.24 - wingFlutter;
 
         // Both cute dino paws hold the glowing Sunberry while munching!
         const holdBob = Math.sin(chomp) * 0.08;
@@ -2249,17 +2473,22 @@ export class EmberModel extends THREE.Group {
         this.leftHandPivot.rotation.set(0.2, 0.3, 0);
         this.rightHandPivot.rotation.set(0.2, -0.3, 0);
 
-        // Happy wiggling dino feet while eating
-        this.leftFootPivot.rotation.x = Math.sin(chomp) * 0.22;
-        this.rightFootPivot.rotation.x = -Math.sin(chomp) * 0.22;
+        // Happy wiggling & hopping dino feet while eating
+        const kneeHop = jumpOffset * 1.8;
+        this.backLeftLeg.rotation.x = -0.2 - kneeHop * 0.5;
+        this.backRightLeg.rotation.x = -0.2 - kneeHop * 0.5;
+        this.leftShinPivot.rotation.x = 0.18 + kneeHop * 0.85;
+        this.rightShinPivot.rotation.x = 0.18 + kneeHop * 0.85;
+        this.leftFootPivot.rotation.x = Math.sin(chomp) * 0.22 + kneeHop * 0.3;
+        this.rightFootPivot.rotation.x = -Math.sin(chomp) * 0.22 + kneeHop * 0.3;
 
         this.sunberryProp.scale.setScalar(
           Math.max(0.25, 1 - (t % 1.4) * 0.45),
         );
-        this.tailPivot.rotation.x = -0.06;
-        this.tailPivot.rotation.y = Math.sin(chomp) * 0.34;
-        this.tailMidPivot.rotation.y = Math.sin(chomp - 0.6) * 0.3;
-        this.tailTipPivot.rotation.y = Math.sin(chomp - 1.2) * 0.26;
+        this.tailPivot.rotation.x = -0.04 + jumpOffset * 0.3;
+        this.tailPivot.rotation.y = Math.sin(chomp) * 0.38;
+        this.tailMidPivot.rotation.y = Math.sin(chomp - 0.6) * 0.34;
+        this.tailTipPivot.rotation.y = Math.sin(chomp - 1.2) * 0.3;
         break;
       }
 

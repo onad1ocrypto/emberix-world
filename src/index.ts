@@ -80,12 +80,21 @@ function bootstrapApplication(): void {
     }
   });
 
-  // Expose deterministic timer helper on window for automated verification
+  // Expose deterministic timer & feed feedback helpers on window for automated verification
   const win = window as unknown as Record<string, unknown>;
   win.advanceHungerTimer = (seconds = tickSeconds) =>
     storageManager.tickRealtimeDecay(seconds);
   win.setPetHungerLevel = (hunger: number) =>
     storageManager.setHungerLevel(hunger);
+  win.getEmberFeedState = () => ({
+    animation: worldEngine.ember.getAnimationState(),
+    activeGoldenSparks: worldEngine.ember.getActiveFeedSparkCount(),
+    jumpOffset: worldEngine.ember.getFeedJumpOffset(),
+    rootPivotY: Number(worldEngine.ember.rootPivot.position.y.toFixed(4)),
+    celebrationTimer: Number(
+      worldEngine.ember.getFeedCelebrationTimer().toFixed(3),
+    ),
+  });
 
   // Register XR Blocks script for Android XR headset support
   try {

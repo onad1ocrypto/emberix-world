@@ -82,6 +82,76 @@ export const HUNGER_LOW_THRESHOLD = 30;
 export const HUNGER_CRITICAL_THRESHOLD = 15;
 export const HUNGER_TICK_INTERVAL_MS = 15000;
 
+/**
+ * Constants and deterministic helpers for EMBER's celebratory golden spark burst
+ * and slight jump animation when the 'Feed' button is pressed.
+ */
+export const FEED_CELEBRATION_DURATION_SEC = 1.35;
+export const FEED_GOLDEN_SPARK_COUNT = 28;
+export const FEED_JUMP_PEAK_OFFSET = 0.16;
+
+export interface GoldenSparkDescriptor {
+  angle: number;
+  radialSpeed: number;
+  upwardSpeed: number;
+  startRadius: number;
+  startY: number;
+  maxLife: number;
+  colorHex: number;
+  scale: number;
+}
+
+/**
+ * Computes EMBER's vertical jump offset (in meters above baseline rootPivot.y = 0.46)
+ * during the 'eating' animation triggered by pressing 'Feed'.
+ * Produces a cheerful initial celebratory hop (+0.16m peak) followed by a secondary mini-bounce
+ * (+0.085m peak) and gentle happy munching bob.
+ */
+export function computeFeedJumpOffset(elapsedSeconds: number): number {
+  if (elapsedSeconds < 0) return 0;
+  // Primary celebratory hop (0.00s -> 0.52s)
+  if (elapsedSeconds < 0.52) {
+    const phase = elapsedSeconds / 0.52;
+    return Math.sin(phase * Math.PI) * FEED_JUMP_PEAK_OFFSET;
+  }
+  // Secondary joyful landing bounce (0.52s -> 0.92s)
+  if (elapsedSeconds < 0.92) {
+    const phase = (elapsedSeconds - 0.52) / 0.4;
+    return Math.sin(phase * Math.PI) * 0.085;
+  }
+  // Gentle happy munching bob while finishing the Sunberry
+  return Math.abs(Math.sin((elapsedSeconds - 0.92) * 8.5)) * 0.028;
+}
+
+/**
+ * Builds deterministic golden spark burst trajectories in a 360-degree celebratory
+ * halo around EMBER when the 'Feed' button is pressed.
+ */
+export function buildFeedGoldenSparkBurst(
+  count = FEED_GOLDEN_SPARK_COUNT,
+): GoldenSparkDescriptor[] {
+  const goldenPalette = [0xffd700, 0xffab00, 0xfde047, 0xfffbeb, 0xf59e0b];
+  const sparks: GoldenSparkDescriptor[] = [];
+  const safeCount = Math.max(1, Math.floor(count));
+  for (let i = 0; i < safeCount; i++) {
+    const ringFraction = i / safeCount;
+    const goldenAngleOffset = (i % 3) * 0.21;
+    const angle = ringFraction * Math.PI * 2 + goldenAngleOffset;
+    const tier = i % 4;
+    sparks.push({
+      angle,
+      radialSpeed: 0.42 + tier * 0.12 + ((i * 7) % 5) * 0.03,
+      upwardSpeed: 0.82 + tier * 0.18 + ((i * 11) % 4) * 0.05,
+      startRadius: 0.22 + (i % 3) * 0.06,
+      startY: 0.34 + tier * 0.11,
+      maxLife: 0.9 + ((i * 5) % 6) * 0.08,
+      colorHex: goldenPalette[i % goldenPalette.length],
+      scale: 0.85 + (i % 3) * 0.22,
+    });
+  }
+  return sparks;
+}
+
 export type HungerStateLevel = 'satisfied' | 'hungry' | 'starving';
 
 export interface HungerTickResult {
