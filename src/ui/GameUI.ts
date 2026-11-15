@@ -32,6 +32,11 @@ import {
   LANGUAGE_OPTIONS,
 } from '../i18n/translations';
 import { storageManager } from '../storage/StorageManager';
+import {
+  KeeperCodeError,
+  decodeKeeperCode,
+  encodeKeeperCode,
+} from '../storage/keeperCode';
 import type {
   AppLanguage,
   AppMode,
@@ -73,6 +78,11 @@ export class GameUI {
   private authFeedback: { type: 'success' | 'error'; message: string } | null =
     null;
   private pendingPlayModeAfterAuth: 'playing' | 'ar' | null = null;
+  private keeperCodeMode: 'export' | 'import' | null = null;
+  private keeperCodeText = '';
+  private keeperCodeStatus: { type: 'success' | 'error'; message: string } | null =
+    null;
+  private keeperCodeAwaitingConfirm = false;
   private selfiePose: SelfiePoseId = 'wave';
   private selfieFrame: SelfieFrameId = 'gold';
   private lastSelfieDataUrl = '';
@@ -2298,7 +2308,7 @@ export class GameUI {
                     <div class="keeper-id-details">
                       <h3 class="keeper-id-name">${currentUser.username}</h3>
                       <p class="keeper-id-title-badge">🏅 ${currentUser.titleBadge}</p>
-                      <p class="keeper-id-email">${currentUser.email} · 🐉 ${petName}</p>
+                      <p class="keeper-id-email">${currentUser.email ? `${currentUser.email} · ` : ''}🐉 ${petName}</p>
                     </div>
                   </div>
                   <div class="keeper-id-stats-row">
@@ -2347,7 +2357,7 @@ export class GameUI {
                           <div class="saved-account-item ${isCurrent ? 'account-item-active' : ''}">
                             <div class="saved-account-meta">
                               <strong>${acc.username} · 🐉 ${acc.saveData.progression.petName || 'EMBER'}</strong>
-                              <small>${acc.titleBadge} · ${acc.email} · ${acc.saveData.progression.playerXp} XP</small>
+                              <small>${acc.titleBadge}${acc.email ? ` · ${acc.email}` : ''} · ${acc.saveData.progression.playerXp} XP</small>
                             </div>
                             ${
                               isCurrent
@@ -2360,6 +2370,9 @@ export class GameUI {
                       .join('')}
                   </div>
                 </div>
+
+                ${this.renderKeeperCodeBox(t)}
+
               </div>
 
               <!-- Right Column: Custom Pet Name Editor + Keeper Avatar & Title Customization -->
@@ -2521,7 +2534,7 @@ export class GameUI {
                             <div class="saved-account-item">
                               <div class="saved-account-meta">
                                 <strong>${acc.username} · 🐉 ${acc.saveData.progression.petName || 'EMBER'}</strong>
-                                <small>${acc.titleBadge} · ${acc.email} · ${acc.saveData.progression.playerXp} XP</small>
+                                <small>${acc.titleBadge}${acc.email ? ` · ${acc.email}` : ''} · ${acc.saveData.progression.playerXp} XP</small>
                               </div>
                               <button type="button" class="btn-primary-cta btn-sm" data-quick-switch-id="${acc.id}">Login</button>
                             </div>
@@ -2532,6 +2545,8 @@ export class GameUI {
                   `
                   }
                 </div>
+
+                ${this.renderKeeperCodeBox(t)}
               </div>
 
               <!-- Right Column: Registration & Login Forms -->
@@ -3557,6 +3572,224 @@ export class GameUI {
     this.bindQuestClaimButtons();
   }
 
+  private renderKeeperCodeBox(t: ReturnType<typeof getTranslation>): string {
+    return `
+                <div class="keeper-code-box">
+                  <h3 class="section-heading">🔑 ${t.account.keeperCodeHeading}</h3>
+                  <p class="body-copy">${t.account.keeperCodeDesc}</p>
+                  <div class="keeper-code-actions">
+                    <button type="button" class="btn-secondary-gold btn-sm" id="btn-keeper-code-export">
+                      <span>${t.account.keeperCodeExportBtn}</span>
+                    </button>
+                    <button type="button" class="btn-surface btn-sm" id="btn-keeper-code-import">
+                      <span>${t.account.keeperCodeImportBtn}</span>
+                    </button>
+                  </div>
+                  ${
+                    this.keeperCodeMode
+                      ? `<div class="keeper-code-panel" id="keeper-code-panel">
+                          <p class="body-copy">${
+                            this.keeperCodeMode === 'export'
+                              ? t.account.keeperCodeExportHint
+                              : t.account.keeperCodeImportHint
+                          }</p>
+                          <textarea
+                            id="keeper-code-text"
+                            class="keeper-code-text"
+                            rows="3"
+                            spellcheck="false"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            aria-label="${t.account.keeperCodeHeading}"
+                            placeholder="EMBERIX-…"
+                            ${this.keeperCodeMode === 'export' ? 'readonly' : ''}
+                          >${this.escapeText(this.keeperCodeText)}</textarea>
+                          ${
+                            this.keeperCodeAwaitingConfirm
+                              ? `<p class="keeper-code-warning" role="alert">⚠️ ${t.account.keeperCodeConfirmHint}</p>`
+                              : ''
+                          }
+                          ${
+                            this.keeperCodeStatus
+                              ? `<p class="keeper-code-status keeper-code-status-${
+                                  this.keeperCodeStatus.type
+                                }" id="keeper-code-status" role="status">${
+                                  this.keeperCodeStatus.type === 'success' ? '✨' : '⚠️'
+                                } ${this.escapeText(this.keeperCodeStatus.message)}</p>`
+                              : ''
+                          }
+                          <div class="keeper-code-panel-actions">
+                            ${
+                              this.keeperCodeMode === 'export'
+                                ? `<button type="button" class="btn-secondary-gold btn-sm" id="btn-keeper-code-copy">
+                                    <span>${t.account.keeperCodeCopyBtn}</span>
+                                  </button>`
+                                : `<button type="button" class="btn-primary-cta btn-sm ${
+                                    this.keeperCodeAwaitingConfirm ? 'keeper-code-confirm' : ''
+                                  }" id="btn-keeper-code-apply">
+                                    <span>${
+                                      this.keeperCodeAwaitingConfirm
+                                        ? t.account.keeperCodeConfirmBtn
+                                        : t.account.keeperCodeApplyBtn
+                                    }</span>
+                                  </button>`
+                            }
+                            <button type="button" class="btn-surface btn-sm" id="btn-keeper-code-close">
+                              <span>${t.account.keeperCodeCloseBtn}</span>
+                            </button>
+                          </div>
+                        </div>`
+                      : ''
+                  }
+                </div>
+    `;
+  }
+
+  private escapeText(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private keeperCodeErrorMessage(error: unknown): string {
+    const t = getTranslation(storageManager.getState().settings.language);
+    if (error instanceof KeeperCodeError) {
+      if (error.code === 'checksum') return t.account.keeperCodeErrChecksum;
+      if (error.code === 'version') return t.account.keeperCodeErrVersion;
+      if (error.code === 'unsupported') return t.account.keeperCodeErrUnsupported;
+    }
+    return t.account.keeperCodeErrFormat;
+  }
+
+  private async openKeeperCodePanel(mode: 'export' | 'import'): Promise<void> {
+    this.sound.playClick();
+    this.keeperCodeMode = mode;
+    this.keeperCodeText = '';
+    this.keeperCodeStatus = null;
+    this.keeperCodeAwaitingConfirm = false;
+    this.render();
+
+    if (mode === 'export') {
+      try {
+        this.keeperCodeText = await encodeKeeperCode(storageManager.getState());
+      } catch (error) {
+        this.keeperCodeStatus = {
+          type: 'error',
+          message: this.keeperCodeErrorMessage(error),
+        };
+      }
+      this.render();
+      this.scrollKeeperCodeIntoView();
+      return;
+    }
+
+    this.focusKeeperCodeTextarea();
+  }
+
+  private scrollKeeperCodeIntoView(): void {
+    const panel = this.root.querySelector<HTMLElement>('#keeper-code-panel');
+    panel?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  private focusKeeperCodeTextarea(): void {
+    const textarea =
+      this.root.querySelector<HTMLTextAreaElement>('#keeper-code-text');
+    if (!textarea) return;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+
+  private async copyKeeperCode(): Promise<void> {
+    this.sound.playClick();
+    const t = getTranslation(storageManager.getState().settings.language);
+    const textarea =
+      this.root.querySelector<HTMLTextAreaElement>('#keeper-code-text');
+    const code = (textarea?.value || this.keeperCodeText).trim();
+    this.keeperCodeText = code;
+
+    if (!code) {
+      this.keeperCodeStatus = {
+        type: 'error',
+        message: t.account.keeperCodeErrFormat,
+      };
+      this.render();
+      return;
+    }
+
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(code);
+      copied = true;
+    } catch {
+      copied = false;
+    }
+
+    if (!copied && textarea) {
+      const wasReadonly = textarea.hasAttribute('readonly');
+      if (wasReadonly) textarea.removeAttribute('readonly');
+      textarea.focus();
+      textarea.select();
+      try {
+        copied = document.execCommand('copy');
+      } catch {
+        copied = false;
+      }
+      if (wasReadonly) textarea.setAttribute('readonly', '');
+    }
+
+    this.keeperCodeStatus = copied
+      ? { type: 'success', message: t.account.keeperCodeCopied }
+      : { type: 'error', message: t.account.keeperCodeCopyFailed };
+    this.render();
+  }
+
+  private async applyKeeperCode(): Promise<void> {
+    this.sound.playClick();
+    const t = getTranslation(storageManager.getState().settings.language);
+    const textarea =
+      this.root.querySelector<HTMLTextAreaElement>('#keeper-code-text');
+    const raw = (textarea?.value || this.keeperCodeText).trim();
+    this.keeperCodeText = raw;
+
+    let restoredSave;
+    try {
+      restoredSave = await decodeKeeperCode(raw);
+    } catch (error) {
+      this.keeperCodeAwaitingConfirm = false;
+      this.keeperCodeStatus = {
+        type: 'error',
+        message: this.keeperCodeErrorMessage(error),
+      };
+      this.render();
+      return;
+    }
+
+    if (!this.keeperCodeAwaitingConfirm) {
+      this.keeperCodeAwaitingConfirm = true;
+      this.keeperCodeStatus = null;
+      this.render();
+      this.scrollKeeperCodeIntoView();
+      return;
+    }
+
+    const state = storageManager.applyKeeperSave(restoredSave);
+    const petName = state.progression.petName;
+    this.draftPetName = petName;
+    this.keeperCodeMode = null;
+    this.keeperCodeText = '';
+    this.keeperCodeStatus = null;
+    this.keeperCodeAwaitingConfirm = false;
+    this.sound.playLevelUp();
+    this.authFeedback = {
+      type: 'success',
+      message: `${t.account.keeperCodeRestored} — ${petName}`,
+    };
+    this.render();
+  }
+
   private bindQuestClaimButtons(): void {
     this.root
       .querySelectorAll<HTMLButtonElement>('[data-claim-quest-id]')
@@ -3815,6 +4048,41 @@ const regPassInput =
             }
           }
         });
+      });
+
+    this.root
+      .querySelector('#btn-keeper-code-export')
+      ?.addEventListener('click', () => {
+        void this.openKeeperCodePanel('export');
+      });
+
+    this.root
+      .querySelector('#btn-keeper-code-import')
+      ?.addEventListener('click', () => {
+        void this.openKeeperCodePanel('import');
+      });
+
+    this.root
+      .querySelector('#btn-keeper-code-close')
+      ?.addEventListener('click', () => {
+        this.sound.playClick();
+        this.keeperCodeMode = null;
+        this.keeperCodeText = '';
+        this.keeperCodeStatus = null;
+        this.keeperCodeAwaitingConfirm = false;
+        this.render();
+      });
+
+    this.root
+      .querySelector('#btn-keeper-code-copy')
+      ?.addEventListener('click', () => {
+        void this.copyKeeperCode();
+      });
+
+    this.root
+      .querySelector('#btn-keeper-code-apply')
+      ?.addEventListener('click', () => {
+        void this.applyKeeperCode();
       });
 
     this.root

@@ -412,6 +412,16 @@ export class StorageManager {
     this.persistAndNotify();
   }
 
+  /**
+   * Replaces the active save with a restored Keeper Code payload.
+   * The payload is untrusted, so it goes through `hydrateSaveData` first.
+   */
+  public applyKeeperSave(partial: Partial<SaveData>): SaveData {
+    this.state = this.hydrateSaveData(partial);
+    this.persistAndNotify();
+    return this.state;
+  }
+
   public subscribe(listener: StateListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

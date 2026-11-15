@@ -2230,6 +2230,104 @@ button:disabled {
   border-color: var(--accent-gold);
 }
 
+.keeper-code-box {
+  background-color: var(--surface-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.keeper-code-actions,
+.keeper-code-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keeper-code-actions > button,
+.keeper-code-panel-actions > button {
+  flex: 1 1 140px;
+  min-height: 36px;
+}
+
+.keeper-code-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.3);
+}
+
+.keeper-code-text {
+  width: 100%;
+  min-height: 74px;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background-color: rgba(15, 23, 42, 0.9);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.keeper-code-text:focus {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 1px;
+}
+
+.keeper-code-warning,
+.keeper-code-status {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.keeper-code-warning {
+  background-color: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: #fde68a;
+}
+
+.keeper-code-status-success {
+  background-color: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #bbf7d0;
+}
+
+.keeper-code-status-error {
+  background-color: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
+
+.keeper-code-confirm {
+  animation: keeperCodePulse 1.3s ease-in-out infinite;
+}
+
+@keyframes keeperCodePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .keeper-code-confirm {
+    animation: none;
+  }
+}
+
 .saved-account-meta {
   display: flex;
   flex-direction: column;
@@ -3449,6 +3547,7 @@ button:disabled {
 
   .pet-name-editor-box,
   .saved-accounts-box,
+  .keeper-code-box,
   .keeper-customize-box,
   .auth-form {
     padding: 12px;

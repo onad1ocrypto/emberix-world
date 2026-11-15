@@ -164,6 +164,24 @@ export interface TranslationPack {
     enterArAs: string;
     logoutBtn: string;
     savedAccountsHeading: string;
+    keeperCodeHeading: string;
+    keeperCodeDesc: string;
+    keeperCodeExportBtn: string;
+    keeperCodeImportBtn: string;
+    keeperCodeExportHint: string;
+    keeperCodeImportHint: string;
+    keeperCodeCopyBtn: string;
+    keeperCodeCopied: string;
+    keeperCodeCopyFailed: string;
+    keeperCodeApplyBtn: string;
+    keeperCodeConfirmBtn: string;
+    keeperCodeConfirmHint: string;
+    keeperCodeCloseBtn: string;
+    keeperCodeRestored: string;
+    keeperCodeErrFormat: string;
+    keeperCodeErrChecksum: string;
+    keeperCodeErrVersion: string;
+    keeperCodeErrUnsupported: string;
     tabRegister: string;
     tabLogin: string;
     usernameLabel: string;
@@ -326,6 +344,28 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       enterArAs: 'Enter AR World',
       logoutBtn: 'Switch / Logout Account',
       savedAccountsHeading: 'Saved Accounts on This Device',
+      keeperCodeHeading: 'Keeper Code',
+      keeperCodeDesc:
+        'Accounts are stored in this browser only. Copy a Keeper Code to carry your dragon to another device.',
+      keeperCodeExportBtn: '🔑 Get My Code',
+      keeperCodeImportBtn: '📥 Use a Code',
+      keeperCodeExportHint:
+        'Copy this code and keep it private — anyone who has it can restore your dragon.',
+      keeperCodeImportHint:
+        'Paste a Keeper Code below. Restoring replaces the save on this device.',
+      keeperCodeCopyBtn: 'Copy Code',
+      keeperCodeCopied: 'Code copied!',
+      keeperCodeCopyFailed: 'Copy failed — select the code and copy it manually.',
+      keeperCodeApplyBtn: 'Restore Progress',
+      keeperCodeConfirmBtn: 'Tap Again to Overwrite',
+      keeperCodeConfirmHint:
+        'This overwrites your current dragon on this device. Tap once more to confirm.',
+      keeperCodeCloseBtn: 'Close',
+      keeperCodeRestored: 'Progress restored — welcome back',
+      keeperCodeErrFormat: 'That does not look like a Keeper Code.',
+      keeperCodeErrChecksum: 'Keeper Code is damaged — check for missing characters.',
+      keeperCodeErrVersion: 'This Keeper Code was made by a different version of the game.',
+      keeperCodeErrUnsupported: 'This browser cannot read that Keeper Code.',
       tabRegister: '✨ Register Account',
       tabLogin: '🔑 Login Account',
       usernameLabel: 'Player Username',
@@ -486,6 +526,28 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       enterArAs: 'Masuk Dunia AR',
       logoutBtn: 'Ganti Akun / Logout',
       savedAccountsHeading: 'Akun Tersimpan di Perangkat Ini',
+      keeperCodeHeading: 'Keeper Code',
+      keeperCodeDesc:
+        'Akun hanya tersimpan di browser ini. Salin Keeper Code untuk membawa naga kamu ke perangkat lain.',
+      keeperCodeExportBtn: '🔑 Ambil Kode Saya',
+      keeperCodeImportBtn: '📥 Pakai Kode',
+      keeperCodeExportHint:
+        'Simpan kode ini dan jangan dibagikan — siapa pun yang punya kodenya bisa memulihkan naga kamu.',
+      keeperCodeImportHint:
+        'Tempel Keeper Code di bawah. Memulihkan akan mengganti save di perangkat ini.',
+      keeperCodeCopyBtn: 'Salin Kode',
+      keeperCodeCopied: 'Kode tersalin!',
+      keeperCodeCopyFailed: 'Gagal menyalin — pilih kodenya dan salin manual.',
+      keeperCodeApplyBtn: 'Pulihkan Progres',
+      keeperCodeConfirmBtn: 'Tekan Lagi untuk Menimpa',
+      keeperCodeConfirmHint:
+        'Ini akan menimpa naga kamu saat ini di perangkat ini. Tekan sekali lagi untuk melanjutkan.',
+      keeperCodeCloseBtn: 'Tutup',
+      keeperCodeRestored: 'Progres dipulihkan — selamat datang kembali',
+      keeperCodeErrFormat: 'Itu sepertinya bukan Keeper Code.',
+      keeperCodeErrChecksum: 'Keeper Code rusak — periksa karakter yang hilang.',
+      keeperCodeErrVersion: 'Keeper Code ini dibuat oleh versi game yang berbeda.',
+      keeperCodeErrUnsupported: 'Browser ini tidak bisa membaca Keeper Code tersebut.',
       tabRegister: '✨ Daftar Akun Baru',
       tabLogin: '🔑 Masuk Akun (Login)',
       usernameLabel: 'Nama Player / Username',
@@ -638,6 +700,25 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       enterArAs: '进入 AR 世界',
       logoutBtn: '切换账号 / 退出登录',
       savedAccountsHeading: '此设备已保存的账号',
+      keeperCodeHeading: '守护者代码',
+      keeperCodeDesc:
+        '账号只保存在本浏览器中。复制守护者代码即可把龙带到其他设备。',
+      keeperCodeExportBtn: '🔑 获取我的代码',
+      keeperCodeImportBtn: '📥 使用代码',
+      keeperCodeExportHint: '请妥善保管，不要分享——任何拿到代码的人都能恢复你的龙。',
+      keeperCodeImportHint: '在下方粘贴守护者代码。恢复将覆盖此设备上的存档。',
+      keeperCodeCopyBtn: '复制代码',
+      keeperCodeCopied: '代码已复制！',
+      keeperCodeCopyFailed: '复制失败——请手动选中代码复制。',
+      keeperCodeApplyBtn: '恢复进度',
+      keeperCodeConfirmBtn: '再次点击以覆盖',
+      keeperCodeConfirmHint: '这会覆盖此设备上当前的龙。再点一次确认。',
+      keeperCodeCloseBtn: '关闭',
+      keeperCodeRestored: '进度已恢复——欢迎回来',
+      keeperCodeErrFormat: '这看起来不是守护者代码。',
+      keeperCodeErrChecksum: '守护者代码已损坏——请检查是否缺少字符。',
+      keeperCodeErrVersion: '此代码由其他版本的游戏生成。',
+      keeperCodeErrUnsupported: '此浏览器无法读取该代码。',
       tabRegister: '✨ 注册新账号',
       tabLogin: '🔑 账号登录',
       usernameLabel: '玩家昵称 / 用户名',
