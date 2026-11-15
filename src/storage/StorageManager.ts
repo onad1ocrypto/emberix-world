@@ -258,26 +258,18 @@ export class StorageManager {
 
   public registerAccount(input: {
     username: string;
-    email: string;
     password: string;
     avatarId: PlayerAvatarId;
     titleBadge: string;
     petName?: string;
   }): { ok: boolean; error?: string; account?: PlayerAccount } {
     const username = input.username.trim();
-    const email = input.email.trim().toLowerCase();
     const password = input.password.trim();
 
     if (username.length < 2) {
       return {
         ok: false,
         error: 'Username must be at least 2 characters.',
-      };
-    }
-    if (email.length < 3) {
-      return {
-        ok: false,
-        error: 'Please enter a valid Email or Keeper ID.',
       };
     }
     if (password.length < 4) {
@@ -288,14 +280,12 @@ export class StorageManager {
     }
 
     const exists = this.accounts.some(
-      (acc) =>
-        acc.username.toLowerCase() === username.toLowerCase() ||
-        acc.email.toLowerCase() === email,
+      (acc) => acc.username.toLowerCase() === username.toLowerCase(),
     );
     if (exists) {
       return {
         ok: false,
-        error: 'Username or Email is already registered. Please Login.',
+        error: 'That username is already taken. Please pick another or log in.',
       };
     }
 
@@ -314,7 +304,6 @@ export class StorageManager {
     const newAccount: PlayerAccount = {
       id: `keeper_${now}_${Math.random().toString(36).slice(2, 7)}`,
       username,
-      email,
       passwordHash: this.hashPassword(password),
       avatarId: input.avatarId || 'fire_keeper',
       titleBadge: input.titleBadge || 'Dragon Tamer',
@@ -340,14 +329,16 @@ export class StorageManager {
     if (!cleanId || !cleanPass) {
       return {
         ok: false,
-        error: 'Please enter Username/Email and Password.',
+        error: 'Please enter your username and password.',
       };
     }
 
+    // `email` is only matched for accounts created before registration became
+    // username-only, so existing saves can still log in.
     const account = this.accounts.find(
       (acc) =>
         acc.username.toLowerCase() === cleanId ||
-        acc.email.toLowerCase() === cleanId,
+        (acc.email ? acc.email.toLowerCase() === cleanId : false),
     );
     if (!account) {
       return {

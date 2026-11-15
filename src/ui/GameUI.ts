@@ -65,7 +65,6 @@ export class GameUI {
   private selectedRegisterAvatar: PlayerAvatarId = 'fire_keeper';
   private selectedRegisterTitle: string = PLAYER_TITLES[0];
   private draftRegUsername = '';
-  private draftRegEmail = '';
   private draftRegPassword = '';
   private draftRegPetName = '';
   private draftPetName = '';
@@ -2588,18 +2587,6 @@ export class GameUI {
                     </div>
 
                     <div class="auth-field">
-                      <label for="reg-email">${t.account.emailLabel}</label>
-                      <input
-                        id="reg-email"
-                        type="email"
-                        class="auth-input"
-                        placeholder="e.g. keeper@solara.id"
-                        value="${this.draftRegEmail}"
-                        required
-                      />
-                    </div>
-
-                    <div class="auth-field">
                       <label for="reg-password">${t.account.passwordLabel}</label>
                       <input
                         id="reg-password"
@@ -2650,12 +2637,12 @@ export class GameUI {
                     : `
                   <form id="form-login-account" class="auth-form" novalidate>
                     <div class="auth-field">
-                      <label for="login-identifier">${t.account.usernameLabel} / Email</label>
+                      <label for="login-identifier">${t.account.usernameLabel}</label>
                       <input
                         id="login-identifier"
                         type="text"
                         class="auth-input"
-                        placeholder="Username or Email"
+                        placeholder="Enter your username"
                         value="${this.draftLoginId}"
                         required
                       />
@@ -3673,12 +3660,7 @@ export class GameUI {
     regPetNameInput?.addEventListener('input', () => {
       this.draftRegPetName = regPetNameInput.value;
     });
-    const regEmailInput =
-      this.root.querySelector<HTMLInputElement>('#reg-email');
-    regEmailInput?.addEventListener('input', () => {
-      this.draftRegEmail = regEmailInput.value;
-    });
-    const regPassInput =
+const regPassInput =
       this.root.querySelector<HTMLInputElement>('#reg-password');
     regPassInput?.addEventListener('input', () => {
       this.draftRegPassword = regPassInput.value;
@@ -3734,14 +3716,12 @@ export class GameUI {
         regPetNameInput?.value ||
         this.draftRegPetName ||
         storageManager.getPetName();
-      const email = regEmailInput?.value || this.draftRegEmail || '';
       const password = regPassInput?.value || this.draftRegPassword || '';
       const titleBadge =
         titleSelect?.value || this.selectedRegisterTitle;
 
       const res = storageManager.registerAccount({
         username,
-        email,
         password,
         avatarId: this.selectedRegisterAvatar,
         titleBadge,
@@ -3751,7 +3731,6 @@ export class GameUI {
       if (res.ok && res.account) {
         this.sound.playLevelUp();
         this.draftRegUsername = '';
-        this.draftRegEmail = '';
         this.draftRegPassword = '';
         this.draftRegPetName = '';
         this.draftPetName = storageManager.getPetName();

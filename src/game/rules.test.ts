@@ -286,7 +286,6 @@ test('copyright-free romantic background music and dance tracks and player regis
   // Register new player account
   const regRes = mgr.registerAccount({
     username: 'DinoTamer',
-    email: 'dino@solara.id',
     password: 'secret123',
     avatarId: 'crystal_mage',
     titleBadge: 'Dino Bestie',
@@ -301,7 +300,6 @@ test('copyright-free romantic background music and dance tracks and player regis
   // Duplicate registration must fail
   const dupRes = mgr.registerAccount({
     username: 'DinoTamer',
-    email: 'other@solara.id',
     password: 'secret123',
     avatarId: 'fire_keeper',
     titleBadge: 'Dragon Tamer',
@@ -355,7 +353,6 @@ test('multi-language settings (en, id, zh), custom pet naming in profile, and se
 
   const regWithPet = mgr.registerAccount({
     username: 'FireKeeper88',
-    email: 'fire@solara.id',
     password: 'pass1234',
     avatarId: 'fire_keeper',
     titleBadge: 'Dragon Tamer',

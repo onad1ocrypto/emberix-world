@@ -167,7 +167,6 @@ export interface TranslationPack {
     tabRegister: string;
     tabLogin: string;
     usernameLabel: string;
-    emailLabel: string;
     passwordLabel: string;
     avatarLabel: string;
     titleLabel: string;
@@ -330,7 +329,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       tabRegister: '✨ Register Account',
       tabLogin: '🔑 Login Account',
       usernameLabel: 'Player Username',
-      emailLabel: 'Email or Keeper ID',
       passwordLabel: 'Secret Password / PIN (Min. 4 chars)',
       avatarLabel: 'Choose Keeper Avatar',
       titleLabel: 'Choose Honor Title',
@@ -491,7 +489,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       tabRegister: '✨ Daftar Akun Baru',
       tabLogin: '🔑 Masuk Akun (Login)',
       usernameLabel: 'Nama Player / Username',
-      emailLabel: 'Email atau ID Keeper',
       passwordLabel: 'Password / PIN Rahasia (Min. 4 karakter)',
       avatarLabel: 'Pilih Avatar Keeper',
       titleLabel: 'Pilih Gelar Kehormatan (Title)',
@@ -644,7 +641,6 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       tabRegister: '✨ 注册新账号',
       tabLogin: '🔑 账号登录',
       usernameLabel: '玩家昵称 / 用户名',
-      emailLabel: '邮箱或玩家 ID',
       passwordLabel: '安全密码 / PIN (至少 4 位)',
       avatarLabel: '选择玩家头像',
       titleLabel: '选择荣誉称号',

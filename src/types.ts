@@ -55,7 +55,8 @@ export interface BackgroundTrackDefinition {
 export interface PlayerAccount {
   id: string;
   username: string;
-  email: string;
+  /** Legacy field: older saves stored an email. New accounts are username-only. */
+  email?: string;
   passwordHash: string;
   avatarId: PlayerAvatarId;
   titleBadge: string;
