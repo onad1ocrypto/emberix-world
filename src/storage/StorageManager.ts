@@ -527,8 +527,9 @@ export class StorageManager {
     this.state.progression.selfieCount =
       (this.state.progression.selfieCount || 0) + 1;
     this.state.progression.totalInteractions += 1;
-    this.state.progression.playerXp += 15;
-    this.state.progression.creatureXp += 20;
+    const isFreshSelfie = this.state.progression.selfieCount <= 2;
+    this.state.progression.playerXp += isFreshSelfie ? 15 : 3;
+    this.state.progression.creatureXp += isFreshSelfie ? 20 : 4;
     this.state.stats.happiness = Math.min(100, this.state.stats.happiness + 4);
     this.state.stats.friendship = Math.min(
       100,
@@ -556,8 +557,9 @@ export class StorageManager {
 
   public recordArTargetSummon(): string[] {
     this.state.progression.arScanCount += 1;
-    this.state.progression.playerXp += 35;
-    this.state.progression.creatureXp += 40;
+    const isFirstScan = this.state.progression.arScanCount <= 1;
+    this.state.progression.playerXp += isFirstScan ? 20 : 4;
+    this.state.progression.creatureXp += isFirstScan ? 25 : 5;
     this.state.progression.playerLevel = calculateLevelFromXp(
       this.state.progression.playerXp,
     ).level;

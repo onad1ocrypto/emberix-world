@@ -289,50 +289,55 @@ export function performPetAction(
     stats.energy = clampStat(Math.max(stats.energy, 45));
     animation = 'surprised';
     feedbackText = 'EMBER woke up refreshed and stretched its wings!';
-    playerXpGain = 10;
-    creatureXpGain = 12;
+    playerXpGain = 2;
+    creatureXpGain = 3;
   } else if (action === 'sleep') {
+    const alreadyRested = stats.isSleeping || stats.energy >= 92;
     stats.isSleeping = true;
     stats.energy = clampStat(stats.energy + 28);
     stats.happiness = clampStat(stats.happiness + 4);
     animation = 'sleeping';
     feedbackText = 'EMBER curled up in a warm ember glow to rest (+28 Energy).';
-    playerXpGain = 15;
-    creatureXpGain = 18;
+    playerXpGain = alreadyRested ? 1 : 5;
+    creatureXpGain = alreadyRested ? 2 : 6;
   } else {
     // Any active action wakes EMBER up gently
     stats.isSleeping = false;
 
     switch (action) {
-      case 'pet':
+      case 'pet': {
+        const alreadyMaxed = stats.friendship >= 92 && stats.happiness >= 95;
         stats.friendship = clampStat(stats.friendship + 10);
         stats.happiness = clampStat(stats.happiness + 8);
         animation = 'happy';
         feedbackText = 'EMBER purred warmly and nuzzled your hand! (+10 Friendship)';
-        playerXpGain = 22;
-        creatureXpGain = 28;
+        playerXpGain = alreadyMaxed ? 2 : 6;
+        creatureXpGain = alreadyMaxed ? 3 : 8;
         prog.petCount += 1;
         break;
+      }
 
-      case 'feed':
+      case 'feed': {
+        const alreadyFull = stats.hunger >= 92;
         stats.hunger = clampStat(stats.hunger + 26);
         stats.happiness = clampStat(stats.happiness + 7);
         stats.energy = clampStat(stats.energy + 8);
         stats.friendship = clampStat(stats.friendship + 5);
         animation = 'eating';
         feedbackText = 'EMBER munched a Roasted Sunberry happily! (+26 Hunger)';
-        playerXpGain = 28;
-        creatureXpGain = 35;
+        playerXpGain = alreadyFull ? 2 : 8;
+        creatureXpGain = alreadyFull ? 3 : 10;
         prog.feedCount += 1;
         break;
+      }
 
       case 'play':
         if (stats.energy < 12) {
           animation = 'sleeping';
           stats.isSleeping = true;
           feedbackText = 'EMBER is too sleepy to play and curled up for a nap!';
-          playerXpGain = 8;
-          creatureXpGain = 10;
+          playerXpGain = 2;
+          creatureXpGain = 3;
         } else {
           stats.happiness = clampStat(stats.happiness + 22);
           stats.friendship = clampStat(stats.friendship + 9);
@@ -340,31 +345,41 @@ export function performPetAction(
           stats.hunger = clampStat(stats.hunger - 6);
           animation = 'jump';
           feedbackText = 'EMBER leaped after the Fire Orb in excitement! (+22 Happiness)';
-          playerXpGain = 32;
-          creatureXpGain = 40;
+          playerXpGain = 10;
+          creatureXpGain = 12;
           prog.playCount += 1;
         }
         break;
 
       case 'dance':
-        stats.happiness = clampStat(stats.happiness + 18);
-        stats.friendship = clampStat(stats.friendship + 8);
-        stats.energy = clampStat(stats.energy - 6);
-        animation = 'dancing';
-        feedbackText = 'EMBER twirled and danced a joyful flame rhythm! (+18 Happiness)';
-        playerXpGain = 26;
-        creatureXpGain = 32;
-        prog.danceCount += 1;
+        if (stats.energy < 10) {
+          animation = 'sleeping';
+          stats.isSleeping = true;
+          feedbackText = 'EMBER is too tired to dance and curled up to rest!';
+          playerXpGain = 2;
+          creatureXpGain = 3;
+        } else {
+          stats.happiness = clampStat(stats.happiness + 18);
+          stats.friendship = clampStat(stats.friendship + 8);
+          stats.energy = clampStat(stats.energy - 6);
+          animation = 'dancing';
+          feedbackText = 'EMBER twirled and danced a joyful flame rhythm! (+18 Happiness)';
+          playerXpGain = 8;
+          creatureXpGain = 10;
+          prog.danceCount += 1;
+        }
         break;
 
-      case 'surprise':
+      case 'surprise': {
+        const alreadyDelighted = stats.happiness >= 92;
         stats.happiness = clampStat(stats.happiness + 12);
         stats.friendship = clampStat(stats.friendship + 6);
         animation = 'surprised';
         feedbackText = 'EMBER gasped with sparkling eyes and puffed a tiny smoke ring!';
-        playerXpGain = 20;
-        creatureXpGain = 24;
+        playerXpGain = alreadyDelighted ? 1 : 5;
+        creatureXpGain = alreadyDelighted ? 2 : 6;
         break;
+      }
     }
   }
 
@@ -627,8 +642,8 @@ export function claimDailyReward(
     claimedQuests: Array.isArray(prog.claimedQuests)
       ? [...prog.claimedQuests]
       : [],
-    playerXp: prog.playerXp + 75,
-    creatureXp: prog.creatureXp + 90,
+    playerXp: prog.playerXp + 25,
+    creatureXp: prog.creatureXp + 30,
     lastDailyClaimDate: todayIsoDate,
   };
   nextProg.playerLevel = calculateLevelFromXp(nextProg.playerXp).level;
@@ -641,7 +656,7 @@ export function claimDailyReward(
     stats: nextStats,
     progression: nextProg,
     rewardSummary:
-      'Claimed Daily Sunstone Blessing: +75 Player XP, +90 Dragon XP, and full care boost!',
+      'Claimed Daily Sunstone Blessing: +25 Player XP, +30 Dragon XP, and full care boost!',
   };
 }
 

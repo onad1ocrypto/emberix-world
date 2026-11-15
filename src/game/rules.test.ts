@@ -414,9 +414,13 @@ test('real-time radar minimap coordinate mapping and zone labels track player po
   assert.equal(outerPt.y, 50);
 });
 
-test('Dragon Gear cosmetics unlock by EMBER level (Lv.1 to Lv.4) and Keeper Quests award XP to unlock higher gear', () => {
+test('Dragon Gear cosmetics unlock gradually by EMBER level (Lv.1 to Lv.4) with anti-spam diminishing returns and staged Keeper Quests', () => {
   const mgr = new StorageManager();
   mgr.resetProgress();
+
+  // New player starts cleanly at 0 XP (Lv.1)
+  assert.equal(mgr.getState().progression.creatureXp, 0);
+  assert.equal(mgr.getState().progression.playerXp, 0);
 
   // At Lv.1, only 'none' and 'crown' are unlocked
   assert.deepEqual(mgr.getState().progression.unlockedCosmetics, [
@@ -428,35 +432,56 @@ test('Dragon Gear cosmetics unlock by EMBER level (Lv.1 to Lv.4) and Keeper Ques
   assert.equal(mgr.equipCosmetic('scarf'), false); // Requires Lv.3
   assert.equal(mgr.equipCosmetic('flame_aura'), false); // Requires Lv.4
 
-  // Feed 3 times and Pet 3 times to complete quest_feed_sunberry and quest_pet_bond
-  mgr.dispatchPetAction('feed');
-  mgr.dispatchPetAction('feed');
-  mgr.dispatchPetAction('feed');
-  mgr.dispatchPetAction('pet');
-  mgr.dispatchPetAction('pet');
-  mgr.dispatchPetAction('pet');
+  // Verify gradual XP: 1 Feed when hungry gives +10 Pet XP, but feeding again when already >= 92 hunger gives only +3 Pet XP
+  mgr.setHungerLevel(70);
+  const feed1 = mgr.dispatchPetAction('feed'); // 70 -> 96 hunger (+10 XP)
+  assert.equal(feed1.progression.creatureXp, 10);
+  const feed2WhenFull = mgr.dispatchPetAction('feed'); // 96 -> 100 hunger (+3 XP diminishing return)
+  assert.equal(feed2WhenFull.progression.creatureXp, 13);
+  assert.equal(mgr.getState().progression.creatureLevel, 1);
 
+  // Complete quest_feed_sunberry (4 feeds) and quest_pet_bond (5 pets)
+  mgr.setHungerLevel(60);
+  mgr.dispatchPetAction('feed');
+  mgr.setHungerLevel(60);
+  mgr.dispatchPetAction('feed');
+  for (let i = 0; i < 5; i++) {
+    mgr.dispatchPetAction('pet');
+  }
+
+  // Claiming both starter quests brings EMBER across the 100 XP threshold to Lv.2
   const claim1 = mgr.claimQuest('quest_feed_sunberry');
+  const claim2 = mgr.claimQuest('quest_pet_bond');
   assert.equal(claim1.claimed, true);
-  assert.ok(mgr.getState().progression.creatureLevel >= 2);
+  assert.equal(claim2.claimed, true);
+  assert.equal(mgr.getState().progression.creatureLevel, 2);
   assert.equal(
     mgr.getState().progression.unlockedCosmetics.includes('collar'),
     true,
   );
   assert.equal(mgr.equipCosmetic('collar'), true);
+  // Still Lv.2 (has NOT jumped straight to Lv.3!)
+  assert.equal(mgr.equipCosmetic('scarf'), false);
 
-  // Complete play & dance quests to reach Lv.3 and unlock Royal Scarf & Cape ('scarf')
-  mgr.dispatchPetAction('play');
-  mgr.dispatchPetAction('play');
-  mgr.dispatchPetAction('dance');
-  mgr.dispatchPetAction('dance');
-  mgr.claimQuest('quest_pet_bond');
+  // Complete play (4x), dance (3x), selfie (2x), and friendship (85%+) quests + daily blessing to gradually reach Lv.3 (338+ XP)
+  for (let i = 0; i < 4; i++) {
+    mgr.dispatchPetAction('play');
+    mgr.dispatchPetAction('sleep');
+  }
+  for (let i = 0; i < 3; i++) {
+    mgr.dispatchPetAction('dance');
+  }
+  mgr.recordSelfieCapture();
+  mgr.recordSelfieCapture();
+  mgr.claimDaily();
   mgr.claimQuest('quest_play_orb');
   mgr.claimQuest('quest_dance_party');
+  mgr.claimQuest('quest_snap_selfie');
+  mgr.claimQuest('quest_friendship_80');
 
   assert.ok(
     mgr.getState().progression.creatureLevel >= 3,
-    `Expected EMBER Lv.3+, got Lv.${mgr.getState().progression.creatureLevel}`,
+    `Expected EMBER Lv.3+, got Lv.${mgr.getState().progression.creatureLevel} (${mgr.getState().progression.creatureXp} XP)`,
   );
   assert.equal(
     mgr.getState().progression.unlockedCosmetics.includes('scarf'),
