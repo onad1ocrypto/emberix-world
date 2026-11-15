@@ -75,6 +75,116 @@ export function applyTimeDecay(
   };
 }
 
+/**
+ * Thresholds & interval for the periodic background hunger timer system.
+ */
+export const HUNGER_LOW_THRESHOLD = 30;
+export const HUNGER_CRITICAL_THRESHOLD = 15;
+export const HUNGER_TICK_INTERVAL_MS = 15000;
+
+export type HungerStateLevel = 'satisfied' | 'hungry' | 'starving';
+
+export interface HungerTickResult {
+  stats: PetStats;
+  previousHunger: number;
+  currentHunger: number;
+  hungerDelta: number;
+  hungerState: HungerStateLevel;
+  isHungry: boolean;
+  crossedIntoHungry: boolean;
+  crossedIntoStarving: boolean;
+  shouldNotifyHungry: boolean;
+}
+
+export function getHungerStateLevel(hunger: number): HungerStateLevel {
+  const clamped = clampStat(hunger);
+  if (clamped <= HUNGER_CRITICAL_THRESHOLD) return 'starving';
+  if (clamped <= HUNGER_LOW_THRESHOLD) return 'hungry';
+  return 'satisfied';
+}
+
+export function isPetHungry(hunger: number): boolean {
+  return clampStat(hunger) <= HUNGER_LOW_THRESHOLD;
+}
+
+/**
+ * Periodically decreases the virtual pet's `hunger` stat on each background timer tick
+ * (default 15 seconds per tick: -2 hunger when awake, -1 hunger when sleeping) and
+ * evaluates whether a hungry state notification should be triggered.
+ */
+export function applyHungerTimerTick(
+  stats: PetStats,
+  elapsedSeconds = 15,
+): HungerTickResult {
+  const prevHunger = clampStat(stats.hunger);
+  if (elapsedSeconds <= 0) {
+    const state = getHungerStateLevel(prevHunger);
+    return {
+      stats: { ...stats, hunger: prevHunger },
+      previousHunger: prevHunger,
+      currentHunger: prevHunger,
+      hungerDelta: 0,
+      hungerState: state,
+      isHungry: state !== 'satisfied',
+      crossedIntoHungry: false,
+      crossedIntoStarving: false,
+      shouldNotifyHungry: false,
+    };
+  }
+
+  const ticks = Math.max(1, Math.round(elapsedSeconds / 15));
+  const hungerLossPerTick = stats.isSleeping ? 1 : 2;
+  const nextHunger = clampStat(prevHunger - ticks * hungerLossPerTick);
+
+  const nextHappiness = stats.isSleeping
+    ? clampStat(stats.happiness)
+    : clampStat(
+        stats.happiness -
+          ticks * (nextHunger <= HUNGER_LOW_THRESHOLD ? 2 : 1),
+      );
+  const nextEnergy = stats.isSleeping
+    ? clampStat(stats.energy + ticks * 3)
+    : clampStat(stats.energy - ticks * 1);
+  const nextFriendship =
+    nextHunger <= HUNGER_CRITICAL_THRESHOLD && !stats.isSleeping
+      ? clampStat(stats.friendship - ticks * 1)
+      : clampStat(stats.friendship);
+  const stillSleeping = stats.isSleeping ? nextEnergy < 99 : false;
+
+  const nextStats: PetStats = {
+    hunger: nextHunger,
+    happiness: nextHappiness,
+    energy: nextEnergy,
+    friendship: nextFriendship,
+    isSleeping: stillSleeping,
+  };
+
+  const prevState = getHungerStateLevel(prevHunger);
+  const nextState = getHungerStateLevel(nextHunger);
+  const crossedIntoHungry =
+    prevState === 'satisfied' &&
+    (nextState === 'hungry' || nextState === 'starving');
+  const crossedIntoStarving =
+    prevState !== 'starving' && nextState === 'starving';
+  const isHungry = nextState !== 'satisfied';
+  const shouldNotifyHungry =
+    crossedIntoHungry ||
+    crossedIntoStarving ||
+    (isHungry && nextHunger < prevHunger && nextHunger % 6 === 0);
+
+  return {
+    stats: nextStats,
+    previousHunger: prevHunger,
+    currentHunger: nextHunger,
+    hungerDelta: nextHunger - prevHunger,
+    hungerState: nextState,
+    isHungry,
+    crossedIntoHungry,
+    crossedIntoStarving,
+    shouldNotifyHungry,
+  };
+}
+
 export interface PetActionResult {
   stats: PetStats;
   progression: ProgressionState;

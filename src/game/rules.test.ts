@@ -12,16 +12,21 @@ import {
 import { getTranslation, LANGUAGE_OPTIONS } from '../i18n/translations';
 import { StorageManager } from '../storage/StorageManager';
 import {
+  applyHungerTimerTick,
   applyTimeDecay,
   calculateFriendshipLevel,
   calculateLevelFromXp,
   canClaimDailyReward,
   claimDailyReward,
   clampToIslandBounds,
+  getHungerStateLevel,
   getIslandZoneLabel,
   groundHeightAt,
+  HUNGER_CRITICAL_THRESHOLD,
+  HUNGER_LOW_THRESHOLD,
   ISLAND_ROCKS,
   ISLAND_TREES,
+  isPetHungry,
   isPointInRiverWater,
   isPositionInBounds,
   parseMindTarget,
@@ -423,6 +428,68 @@ test('all 5 Dragon Gear cosmetics are unlocked and can be equipped immediately',
     assert.equal(mgr.getState().progression.equippedCosmetic, id);
   }
 });
+
+test('background hunger timer periodically decreases hunger and triggers hungry state notifications at low levels', () => {
+  // 1. Threshold classification
+  assert.equal(getHungerStateLevel(80), 'satisfied');
+  assert.equal(isPetHungry(80), false);
+  assert.equal(getHungerStateLevel(HUNGER_LOW_THRESHOLD), 'hungry');
+  assert.equal(isPetHungry(HUNGER_LOW_THRESHOLD), true);
+  assert.equal(getHungerStateLevel(HUNGER_CRITICAL_THRESHOLD), 'starving');
+  assert.equal(isPetHungry(HUNGER_CRITICAL_THRESHOLD), true);
+
+  // 2. Single 15s tick decreases hunger deterministically (-2 awake, -1 sleeping)
+  const startStats = {
+    ...DEFAULT_STATS,
+    hunger: 32,
+    happiness: 80,
+    energy: 80,
+    isSleeping: false,
+  };
+  const tick1 = applyHungerTimerTick(startStats, 15);
+  assert.equal(tick1.previousHunger, 32);
+  assert.equal(tick1.currentHunger, 30);
+  assert.equal(tick1.hungerDelta, -2);
+  assert.equal(tick1.hungerState, 'hungry');
+  assert.equal(tick1.isHungry, true);
+  assert.equal(tick1.crossedIntoHungry, true);
+  assert.equal(tick1.shouldNotifyHungry, true);
+
+  // 3. Crossing into starving threshold (<= 15) triggers critical hungry alert
+  const nearStarving = { ...tick1.stats, hunger: 16 };
+  const tickStarve = applyHungerTimerTick(nearStarving, 15);
+  assert.equal(tickStarve.currentHunger, 14);
+  assert.equal(tickStarve.hungerState, 'starving');
+  assert.equal(tickStarve.crossedIntoStarving, true);
+  assert.equal(tickStarve.shouldNotifyHungry, true);
+
+  // 4. StorageManager.tickRealtimeDecay and subscribeHunger integration
+  const mgr = new StorageManager();
+  const receivedNotifications: number[] = [];
+  const unsub = mgr.subscribeHunger((res) => {
+    if (res.shouldNotifyHungry) {
+      receivedNotifications.push(res.currentHunger);
+    }
+  });
+
+  mgr.setHungerLevel(32);
+  const decayRes = mgr.tickRealtimeDecay(15);
+  assert.equal(decayRes.currentHunger, 30);
+  assert.equal(decayRes.isHungry, true);
+  assert.equal(mgr.getState().stats.hunger, 30);
+  assert.ok(
+    receivedNotifications.includes(30),
+    'Listener must be notified when hunger crosses into <= 30 hungry threshold',
+  );
+
+  // Feeding the pet restores hunger above threshold and clears hungry state
+  const feedRes = mgr.dispatchPetAction('feed');
+  assert.ok(feedRes.stats.hunger > HUNGER_LOW_THRESHOLD);
+  assert.equal(isPetHungry(mgr.getState().stats.hunger), false);
+
+  unsub();
+});
+
 
 
 

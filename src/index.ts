@@ -1,6 +1,7 @@
 import * as xb from 'xrblocks';
 import { MindARTracker } from './ar/MindARTracker';
 import { SoundManager } from './audio/SoundManager';
+import { HUNGER_TICK_INTERVAL_MS } from './game/rules';
 import { storageManager } from './storage/StorageManager';
 import { GameUI } from './ui/GameUI';
 import { IslandWorldEngine } from './world/IslandWorldEngine';
@@ -59,10 +60,32 @@ function bootstrapApplication(): void {
 
   gameUI = new GameUI(uiEl, worldEngine, arTracker, soundManager);
 
-  // Periodic real-time pet stat decay every 20 seconds
+  // Periodic background hunger & care timer (every 15 seconds)
+  const tickSeconds = Math.round(HUNGER_TICK_INTERVAL_MS / 1000);
   window.setInterval(() => {
-    storageManager.tickRealtimeDecay(20);
-  }, 20000);
+    storageManager.tickRealtimeDecay(tickSeconds);
+  }, HUNGER_TICK_INTERVAL_MS);
+
+  // Catch up background hunger decay if tab was hidden or backgrounded on mobile/desktop
+  let hiddenAtMs: number | null = null;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      hiddenAtMs = Date.now();
+    } else if (document.visibilityState === 'visible' && hiddenAtMs !== null) {
+      const elapsedSec = Math.floor((Date.now() - hiddenAtMs) / 1000);
+      hiddenAtMs = null;
+      if (elapsedSec >= tickSeconds) {
+        storageManager.tickRealtimeDecay(elapsedSec);
+      }
+    }
+  });
+
+  // Expose deterministic timer helper on window for automated verification
+  const win = window as unknown as Record<string, unknown>;
+  win.advanceHungerTimer = (seconds = tickSeconds) =>
+    storageManager.tickRealtimeDecay(seconds);
+  win.setPetHungerLevel = (hunger: number) =>
+    storageManager.setHungerLevel(hunger);
 
   // Register XR Blocks script for Android XR headset support
   try {

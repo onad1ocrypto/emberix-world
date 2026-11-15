@@ -74,6 +74,12 @@ export interface TranslationPack {
     dragonGear: string;
     danceMusic: string;
     welcomeToast: string;
+    hungry: string;
+    starving: string;
+    hungryAlertTitle: string;
+    starvingAlertTitle: string;
+    hungryFeedNowBtn: string;
+    hungrySpeechBubble: string;
   };
   selfie: {
     title: string;
@@ -211,6 +217,12 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       danceMusic: '🎵 Dance Music:',
       welcomeToast:
         'Welcome to Solara Island! Click your pet or use the care dock below.',
+      hungry: 'Hungry! 🍎',
+      starving: 'Starving! 🍖',
+      hungryAlertTitle: 'is getting hungry!',
+      starvingAlertTitle: 'is starving and needs food now!',
+      hungryFeedNowBtn: '🍎 Feed Now',
+      hungrySpeechBubble: 'My tummy is rumbling... Feed me a Sunberry? 🍎🥺',
     },
     selfie: {
       title: 'SELFIE PORTRAIT STUDIO',
@@ -356,6 +368,12 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       danceMusic: '🎵 Musik Dance:',
       welcomeToast:
         'Selamat datang di Pulau Solara! Klik pet kamu atau gunakan menu perawatan di bawah.',
+      hungry: 'Lapar! 🍎',
+      starving: 'Sangat Lapar! 🍖',
+      hungryAlertTitle: 'mulai lapar!',
+      starvingAlertTitle: 'sangat lapar dan butuh makan sekarang!',
+      hungryFeedNowBtn: '🍎 Beri Makan',
+      hungrySpeechBubble: 'Perutku keroncongan... Mau buah Sunberry! 🍎🥺',
     },
     selfie: {
       title: 'STUDIO POTRET SELFIE PET',
@@ -500,6 +518,12 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       dragonGear: '宠物装扮:',
       danceMusic: '🎵 舞蹈音乐:',
       welcomeToast: '欢迎来到索拉岛！点击您的宠物或使用下方互动栏。',
+      hungry: '饥饿! 🍎',
+      starving: '极度饥饿! 🍖',
+      hungryAlertTitle: '肚子饿了！',
+      starvingAlertTitle: '非常饥饿，快喂食吧！',
+      hungryFeedNowBtn: '🍎 立即喂食',
+      hungrySpeechBubble: '肚子咕咕叫了…能喂我太阳果吗？🍎🥺',
     },
     selfie: {
       title: '宠物自拍合影工作室',

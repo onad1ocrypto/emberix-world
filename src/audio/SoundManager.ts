@@ -662,6 +662,32 @@ export class SoundManager {
   }
 
   /**
+   * Plays a gentle tummy-rumble & plaintive dragon whimper alert when the pet's
+   * hunger drops into the hungry/starving state.
+   */
+  public playHungryAlert(): void {
+    const ctx = this.ensureContext();
+    const vol = this.getSfxGain();
+    if (!ctx || vol <= 0) return;
+
+    const notes = [440.0, 349.23, 293.66];
+    notes.forEach((freq, idx) => {
+      const start = ctx.currentTime + idx * 0.13;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.86, start + 0.11);
+      gain.gain.setValueAtTime(vol * 0.55, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.15);
+    });
+  }
+
+  /**
    * Starts playing the selected copyright-free multi-instrument dance track
    * (melody + bassline + kick/snare/hi-hat percussion) while EMBER dances!
    */

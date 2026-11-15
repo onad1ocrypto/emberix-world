@@ -7,12 +7,17 @@ import {
   getDefaultSettings,
 } from '../constants';
 import {
+  applyHungerTimerTick,
   applyTimeDecay,
   calculateFriendshipLevel,
   calculateLevelFromXp,
   claimDailyReward,
+  clampStat,
   evaluateAchievements,
+  getHungerStateLevel,
+  isPetHungry,
   performPetAction,
+  type HungerTickResult,
   type PetActionResult,
 } from '../game/rules';
 import type {
@@ -27,12 +32,14 @@ import type {
 } from '../types';
 
 type StateListener = (state: SaveData) => void;
+type HungerListener = (result: HungerTickResult) => void;
 
 export class StorageManager {
   private state: SaveData;
   private accounts: PlayerAccount[] = [];
   private activeAccountId: string | null = null;
   private listeners = new Set<StateListener>();
+  private hungerListeners = new Set<HungerListener>();
   private storageAvailable = true;
 
   constructor() {
@@ -410,6 +417,17 @@ export class StorageManager {
     return () => this.listeners.delete(listener);
   }
 
+  public subscribeHunger(listener: HungerListener): () => void {
+    this.hungerListeners.add(listener);
+    return () => this.hungerListeners.delete(listener);
+  }
+
+  private notifyHungerListeners(tickResult: HungerTickResult): void {
+    for (const listener of this.hungerListeners) {
+      listener(tickResult);
+    }
+  }
+
   private persistAndNotify(): void {
     this.state.progression.lastSavedAt = Date.now();
     const activeUser = this.getCurrentUser();
@@ -445,13 +463,50 @@ export class StorageManager {
     return result;
   }
 
-  public tickRealtimeDecay(deltaSeconds: number): void {
-    if (deltaSeconds <= 0) return;
-    this.state.stats = applyTimeDecay(this.state.stats, deltaSeconds);
+  public tickRealtimeDecay(deltaSeconds = 15): HungerTickResult {
+    const tickResult = applyHungerTimerTick(this.state.stats, deltaSeconds);
+    this.state.stats = tickResult.stats;
     this.state.progression.friendshipLevel = calculateFriendshipLevel(
       this.state.stats.friendship,
     );
     this.persistAndNotify();
+    if (tickResult.hungerDelta !== 0 || tickResult.isHungry) {
+      this.notifyHungerListeners(tickResult);
+    }
+    return tickResult;
+  }
+
+  public setHungerLevel(targetHunger: number): HungerTickResult {
+    const previousHunger = clampStat(this.state.stats.hunger);
+    const currentHunger = clampStat(targetHunger);
+    const previousState = getHungerStateLevel(previousHunger);
+    const hungerState = getHungerStateLevel(currentHunger);
+    const isHungry = isPetHungry(currentHunger);
+    const crossedIntoHungry =
+      previousState === 'satisfied' &&
+      (hungerState === 'hungry' || hungerState === 'starving');
+    const crossedIntoStarving =
+      previousState !== 'starving' && hungerState === 'starving';
+
+    this.state.stats = {
+      ...this.state.stats,
+      hunger: currentHunger,
+    };
+    this.persistAndNotify();
+
+    const tickResult: HungerTickResult = {
+      stats: { ...this.state.stats },
+      previousHunger,
+      currentHunger,
+      hungerDelta: currentHunger - previousHunger,
+      hungerState,
+      isHungry,
+      crossedIntoHungry,
+      crossedIntoStarving,
+      shouldNotifyHungry: isHungry,
+    };
+    this.notifyHungerListeners(tickResult);
+    return tickResult;
   }
 
   public recordSelfieCapture(): {

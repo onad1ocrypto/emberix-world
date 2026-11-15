@@ -16,10 +16,13 @@ import type { SoundManager } from '../audio/SoundManager';
 import {
   calculateLevelFromXp,
   canClaimDailyReward,
+  getHungerStateLevel,
   getIslandZoneLabel,
   ISLAND_TREES,
+  isPetHungry,
   riverCenterXAt,
   worldToMinimapPoint,
+  type HungerTickResult,
 } from '../game/rules';
 import {
   getTranslation,
@@ -115,12 +118,46 @@ export class GameUI {
       }
     });
 
+    // Subscribe to background hunger timer ticks & low-hunger notifications
+    storageManager.subscribeHunger((tick) => {
+      this.handleHungerTickNotification(tick);
+    });
+
     // Check URL query param `?autostart=1`
     const params = new URLSearchParams(window.location.search);
     if (params.get('autostart') === '1') {
       this.setMode('playing');
     } else {
       this.setMode('title');
+    }
+  }
+
+  private handleHungerTickNotification(tick: HungerTickResult): void {
+    if (!tick.shouldNotifyHungry) return;
+
+    const state = storageManager.getState();
+    const t = getTranslation(state.settings.language);
+    const petName = storageManager.getPetName();
+
+    this.sound.playHungryAlert();
+
+    const alertMsg =
+      tick.hungerState === 'starving'
+        ? `🍖 ${petName} ${t.hud.starvingAlertTitle} (${tick.currentHunger}/100)`
+        : `🍎 ${petName} ${t.hud.hungryAlertTitle} (${tick.currentHunger}/100)`;
+
+    this.showFeedback(alertMsg);
+
+    if (
+      !state.stats.isSleeping &&
+      (this.mode === 'playing' || this.mode === 'ar')
+    ) {
+      this.showSpeechBubble(t.hud.hungrySpeechBubble);
+      if (this.mode === 'ar') {
+        this.arTracker.triggerARAnimation('surprised', 1.8);
+      } else {
+        this.world.triggerEmberAnimation('surprised', 1.8);
+      }
     }
   }
 
@@ -964,6 +1001,17 @@ export class GameUI {
     const t = getTranslation(settings.language);
     const petName = storageManager.getPetName();
     const creatureLvl = calculateLevelFromXp(progression.creatureXp);
+    const hungerState = getHungerStateLevel(stats.hunger);
+    const hungryActive = isPetHungry(stats.hunger);
+    const stateBadgeText = stats.isSleeping
+      ? t.hud.sleeping
+      : hungerState === 'starving'
+        ? t.hud.starving
+        : hungerState === 'hungry'
+          ? t.hud.hungry
+          : t.hud.active;
+    const stateBadgeClass =
+      !stats.isSleeping && hungryActive ? 'state-hungry' : '';
 
     return `
       <main class="hud-layer" aria-label="3D World HUD">
@@ -974,7 +1022,7 @@ export class GameUI {
             <div class="hud-creature-meta">
               <div class="hud-name-line">
                 <h2 class="hud-creature-name">${petName}<span class="hud-lvl-text tabular-nums">Lv.${creatureLvl.level}</span></h2>
-                <span class="hud-state-label" id="hud-sleep-badge">${stats.isSleeping ? t.hud.sleeping : t.hud.active}</span>
+                <span class="hud-state-label ${stateBadgeClass}" id="hud-sleep-badge">${stateBadgeText}</span>
               </div>
               <div class="hud-sub-meta">
                 <span class="hud-bond-label">${t.hud.bond} Lv.${progression.friendshipLevel}</span>
@@ -987,7 +1035,7 @@ export class GameUI {
 
           <!-- Glossy Color-Coded Pill Status Bars -->
           <div class="glossy-bars-stack">
-            <div class="glossy-stat-pill">
+            <div class="glossy-stat-pill ${hungryActive ? 'stat-low-warning' : ''}" id="pill-hunger">
               <span class="stat-pill-icon icon-heart" title="Hunger Satisfaction">❤️</span>
               <div class="stat-track">
                 <div class="stat-fill fill-hunger" id="bar-hunger" style="width: ${stats.hunger}%"></div>
@@ -1018,6 +1066,24 @@ export class GameUI {
                 <span class="stat-overlay-val tabular-nums" id="val-friendship">${t.hud.bond} ${stats.friendship}%</span>
               </div>
             </div>
+          </div>
+
+          <!-- Hungry State Notification Banner -->
+          <div
+            id="hungry-notification-banner"
+            class="hungry-notification-banner ${hungryActive ? 'hungry-banner-visible' : ''} ${hungerState === 'starving' ? 'hungry-banner-critical' : ''}"
+            role="alert"
+            aria-live="assertive"
+            data-hunger-state="${hungerState}"
+          >
+            <span class="hungry-alert-icon" aria-hidden="true">${hungerState === 'starving' ? '🍖' : '🍎'}</span>
+            <div class="hungry-alert-copy">
+              <strong id="hungry-alert-text">${petName} ${hungerState === 'starving' ? t.hud.starvingAlertTitle : t.hud.hungryAlertTitle}</strong>
+              <span class="hungry-alert-sub tabular-nums" id="hungry-alert-sub">Hunger: ${stats.hunger}/100</span>
+            </div>
+            <button type="button" class="btn-hungry-feed-now" id="btn-hungry-feed-now">
+              ${t.hud.hungryFeedNowBtn}
+            </button>
           </div>
         </section>
 
@@ -1136,7 +1202,7 @@ export class GameUI {
                 <span>${t.hud.pet}</span>
               </button>
 
-              <button type="button" class="btn-pet-action btn-care-feed" data-pet-action="feed" aria-label="Feed ${petName}">
+              <button type="button" class="btn-pet-action btn-care-feed ${hungryActive ? 'btn-feed-urgent' : ''}" data-pet-action="feed" aria-label="Feed ${petName}">
                 <span class="care-icon-badge badge-apple">🍎</span>
                 <span>${t.hud.feed}</span>
               </button>
@@ -2520,10 +2586,64 @@ export class GameUI {
     setBar('energy', stats.energy);
     setBar('friendship', stats.friendship, t.hud.bond);
 
+    const hungerState = getHungerStateLevel(stats.hunger);
+    const hungryActive = isPetHungry(stats.hunger);
+
     const sleepBadge = this.root.querySelector<HTMLElement>('#hud-sleep-badge');
     if (sleepBadge) {
-      sleepBadge.textContent = stats.isSleeping ? t.hud.sleeping : t.hud.active;
+      sleepBadge.textContent = stats.isSleeping
+        ? t.hud.sleeping
+        : hungerState === 'starving'
+          ? t.hud.starving
+          : hungerState === 'hungry'
+            ? t.hud.hungry
+            : t.hud.active;
+      sleepBadge.classList.toggle(
+        'state-hungry',
+        !stats.isSleeping && hungryActive,
+      );
     }
+
+    const hungerPill = this.root.querySelector<HTMLElement>('#pill-hunger');
+    if (hungerPill) {
+      hungerPill.classList.toggle('stat-low-warning', hungryActive);
+    }
+
+    const feedBtn = this.root.querySelector<HTMLElement>(
+      '[data-pet-action="feed"]',
+    );
+    if (feedBtn) {
+      feedBtn.classList.toggle('btn-feed-urgent', hungryActive);
+    }
+
+    const hungryBanner = this.root.querySelector<HTMLElement>(
+      '#hungry-notification-banner',
+    );
+    if (hungryBanner) {
+      hungryBanner.dataset.hungerState = hungerState;
+      hungryBanner.classList.toggle('hungry-banner-visible', hungryActive);
+      hungryBanner.classList.toggle(
+        'hungry-banner-critical',
+        hungerState === 'starving',
+      );
+      const iconEl = hungryBanner.querySelector<HTMLElement>(
+        '.hungry-alert-icon',
+      );
+      if (iconEl) {
+        iconEl.textContent = hungerState === 'starving' ? '🍖' : '🍎';
+      }
+      const alertTextEl =
+        this.root.querySelector<HTMLElement>('#hungry-alert-text');
+      if (alertTextEl) {
+        alertTextEl.textContent = `${petName} ${hungerState === 'starving' ? t.hud.starvingAlertTitle : t.hud.hungryAlertTitle}`;
+      }
+      const alertSubEl =
+        this.root.querySelector<HTMLElement>('#hungry-alert-sub');
+      if (alertSubEl) {
+        alertSubEl.textContent = `Hunger: ${stats.hunger}/100`;
+      }
+    }
+
     const sleepLabel =
       this.root.querySelector<HTMLElement>('#label-sleep-toggle');
     if (sleepLabel) {
@@ -2698,6 +2818,11 @@ export class GameUI {
   }
 
   private bindPlayingHUDEvents(): void {
+    this.root
+      .querySelector('#btn-hungry-feed-now')
+      ?.addEventListener('click', () => {
+        this.handlePetAction('feed');
+      });
     this.root
       .querySelector('#hud-btn-selfie')
       ?.addEventListener('click', () => {
