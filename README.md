@@ -60,9 +60,11 @@ reacting to your taps. Same creature, same stats, same bond.
 - Ambient soundtrack and interaction SFX
 
 **AR**
-- MindAR image tracking driven by a printed physical card
-- EMBER anchors to the card, scales with viewing distance, and can be
+- Camera-based card detection driven by a printed physical card
+- EMBER anchors to the detected card, scales with its size in frame, and can be
   interacted with in AR
+- Detection is a luminance-and-chroma match against the compiled card target
+  that runs in the browser — no feature tracking, no pose estimation
 - In-app **AR card generator** so anyone can produce the card themselves
 - Marker-anchor preview mode, usable without a printer
 
@@ -97,14 +99,15 @@ Collection and Encyclopedia as the shape of what comes next.
 3. Print the card (or open it on a second screen)
 4. Point the camera at the card — EMBER appears standing on it
 
-No printer? Use **Preview Marker Anchor** inside AR mode to see the same
-tracking without paper.
+No printer? Use **Preview Marker Anchor** inside AR mode to place the pet
+without a card.
 
 ## Tech
 
 - **Three.js** for the 3D world, creature and rendering
 - **XR Blocks** for the spatial UI layer
-- **MindAR** for image-tracking AR (custom 1024×1024 target, compiled to `.mind`)
+- **Custom card detector** for AR (luminance + chroma match against a
+  1024×1024 target compiled to `.mind`)
 - **Rapier** for physics, **three-pathfinding** for navigation
 - **Vite + TypeScript**, no framework runtime for the shell
 - All state in **`localStorage`** — no backend, no analytics, no tracking
@@ -128,7 +131,8 @@ Camera access for AR requires a secure context — use `localhost` or HTTPS.
 
 ```
 src/
-  ar/MindARTracker.ts        MindAR image tracking + AR scene wiring
+  ar/cardDetector.ts         Card matching: luminance grid + chroma
+  ar/MindARTracker.ts        AR scene wiring, camera and anchor
   creatures/EmberModel.ts    EMBER geometry, rig and animation
   game/rules.ts              Care loop: stats, decay, XP, friendship, rewards
   game/rules.test.ts         Unit tests for the care loop rules
@@ -150,7 +154,7 @@ public/
 ## Privacy
 
 There is no server. Progress, accounts and settings live only in your browser's
-`localStorage`. The camera is used solely for MindAR tracking and photo capture;
+`localStorage`. The camera is used solely for card detection and photo capture;
 no frames are uploaded anywhere. Clearing site data resets the pet.
 
 ## Known limitations
@@ -159,7 +163,7 @@ Listed honestly, because they are the next things to build rather than
 oversights:
 
 - Only EMBER is playable; AQUA, MOSS and VOLT are teasers
-- Progress is per-browser — there is no cross-device sync
+- Progress is per-browser; Keeper Code moves it to another device manually
 - Local accounts are a convenience, not real authentication
 - The printable AR card ships as a 1024×1024 PNG and a single-page PDF
 - A web app manifest and icons are shipped, but there is no service worker yet,
@@ -179,5 +183,5 @@ Source code is released under the **MIT License** — see [LICENSE](LICENSE).
 Artwork, the 3D creature model, the AR card and audio assets are original work
 for this project and are covered by the same license unless stated otherwise.
 
-Third-party libraries remain under their own licenses (Three.js, MindAR,
-XR Blocks, Rapier and others — see `package.json`).
+Third-party libraries remain under their own licenses (Three.js, XR Blocks,
+Rapier and others — see `package.json`).

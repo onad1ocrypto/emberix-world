@@ -2,6 +2,11 @@ import * as THREE from 'three';
 import { AR_CARD_MIND_PATH, AR_CARD_PNG_PATH } from '../constants';
 import { EmberModel } from '../creatures/EmberModel';
 import { parseMindTarget } from '../game/rules';
+import {
+  buildCardDetectorTarget,
+  detectCardFrame,
+  type CardDetectorTarget,
+} from './cardDetector';
 import type {
   CosmeticId,
   EmberAnimationState,
@@ -52,6 +57,7 @@ export class MindARTracker {
   private processCanvas: HTMLCanvasElement;
   private processCtx: CanvasRenderingContext2D | null;
 
+  private detectorTarget: CardDetectorTarget | null = null;
   private mindHeader: MindTargetHeader | null = null;
   private mindPyramid: Uint8Array | null = null;
 
@@ -140,7 +146,7 @@ export class MindARTracker {
 
   /**
    * Initializes the AR viewport, loads the `.mind` target, requests rear camera access,
-   * and starts the Three.js + MindAR image tracking loop.
+   * and starts the Three.js card-detection and render loop.
    */
   public async start(
     mountContainer: HTMLElement,
@@ -528,84 +534,22 @@ export class MindARTracker {
       return { detected: false, normX: 0, normY: 0, scale: 1, confidence: 0 };
     }
 
-    const targetGrid = this.mindHeader.grid16;
-    const targetColor = this.mindHeader.colorSignature;
-
-    let bestScore = 0;
-    let bestCx = 32;
-    let bestCy = 32;
-    let bestWinSize = 36;
-
-    for (const winSize of [28, 36, 46]) {
-      const step = 4;
-      for (let wy = 2; wy <= 62 - winSize; wy += step) {
-        for (let wx = 2; wx <= 62 - winSize; wx += step) {
-          let sumR = 0;
-          let sumG = 0;
-          let sumB = 0;
-          let edgeEnergy = 0;
-          let gridDiffSum = 0;
-
-          for (let gy = 0; gy < 16; gy++) {
-            const py = Math.min(63, Math.floor(wy + (gy / 16) * winSize));
-            for (let gx = 0; gx < 16; gx++) {
-              const px = Math.min(63, Math.floor(wx + (gx / 16) * winSize));
-              const idx = (py * 64 + px) * 4;
-              const r = imgData[idx];
-              const g = imgData[idx + 1];
-              const b = imgData[idx + 2];
-              sumR += r;
-              sumG += g;
-              sumB += b;
-
-              const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-              const refLum = targetGrid[gy * 16 + gx];
-              gridDiffSum += Math.abs(lum - refLum);
-
-              if (gx > 0) {
-                const prevIdx = (py * 64 + Math.max(0, px - 1)) * 4;
-                edgeEnergy += Math.abs(r - imgData[prevIdx]);
-              }
-            }
-          }
-
-          const meanR = sumR / 256;
-          const meanG = sumG / 256;
-          const meanB = sumB / 256;
-
-          const colorDist =
-            (Math.abs(meanR - targetColor.meanR) +
-              Math.abs(meanG - targetColor.meanG) +
-              Math.abs(meanB - targetColor.meanB)) /
-            3;
-          const gridScore = Math.max(0, 1 - gridDiffSum / (256 * 85));
-          const colorScore = Math.max(0, 1 - colorDist / 90);
-          const warmFlameRatio =
-            meanR > meanB * 1.22 && meanR > 85 ? 1.0 : 0.45;
-          const contrastScore = Math.min(1, edgeEnergy / (256 * 22));
-
-          const combined =
-            (gridScore * 0.48 + colorScore * 0.32 + contrastScore * 0.2) *
-            warmFlameRatio;
-
-          if (combined > bestScore) {
-            bestScore = combined;
-            bestCx = wx + winSize / 2;
-            bestCy = wy + winSize / 2;
-            bestWinSize = winSize;
-          }
-        }
-      }
+    const target = this.getDetectorTarget();
+    if (!target) {
+      return { detected: false, normX: 0, normY: 0, scale: 1, confidence: 0 };
     }
 
-    const detected = bestScore >= 0.64;
-    return {
-      detected,
-      normX: (bestCx / 64) * 2 - 1,
-      normY: -((bestCy / 64) * 2 - 1),
-      scale: bestWinSize / 36,
-      confidence: Number(bestScore.toFixed(2)),
-    };
+    return detectCardFrame(imgData, target, 64);
+  }
+
+  private getDetectorTarget(): CardDetectorTarget | null {
+    if (this.detectorTarget) return this.detectorTarget;
+    if (!this.mindHeader) return null;
+    this.detectorTarget = buildCardDetectorTarget(
+      this.mindHeader.grid16,
+      this.mindHeader.colorSignature,
+    );
+    return this.detectorTarget;
   }
 
   private afterDraw(cb: () => void): void {

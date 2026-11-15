@@ -1711,7 +1711,7 @@ export class GameUI {
             ${
               s.markerTracked
                 ? `✨ ${petName} Summoned on AR Card — Tap buttons on the right to interact!`
-                : `Point camera at your printed ${petName} AR Card (or click Preview Marker Anchor)`
+                : `Point the camera at your printed ${petName} AR Card — fill the frame, add light if it is dim (or click Preview Marker Anchor)`
             }
           </p>
         </div>
