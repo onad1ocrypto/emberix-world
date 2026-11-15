@@ -2205,9 +2205,9 @@ export class FantasyIsland extends THREE.Group {
     });
 
     const configs = [
-      { x: 7.4, y: 4.5, z: -16.0, scale: 1.42, hasWaterfall: true, hasSpire: true },
-      { x: 10.2, y: 2.1, z: -13.2, scale: 0.85, hasWaterfall: true, hasSpire: false },
-      { x: -8.8, y: 5.6, z: -18.5, scale: 0.95, hasWaterfall: true, hasSpire: false },
+      { x: 7.4, y: 4.5, z: -16.0, scale: 1.42, hasWaterfall: false, hasSpire: true },
+      { x: 10.2, y: 4.4, z: -13.2, scale: 0.85, hasWaterfall: false, hasSpire: false },
+      { x: -8.8, y: 5.6, z: -18.5, scale: 0.95, hasWaterfall: false, hasSpire: false },
     ];
 
     configs.forEach((cfg, idx) => {
@@ -2825,14 +2825,48 @@ export class FantasyIsland extends THREE.Group {
   }
 
   private buildDistantMountains(): void {
-    const mountainMat = new THREE.MeshStandardMaterial({
-      color: 0x4f6d8c,
-      roughness: 0.88,
-      metalness: 0.05,
+    // Use fog: false on distant horizon mountains so scene FogExp2 doesn't bleach them into pale blue-grey triangles
+    const rockMaterials = [
+      new THREE.MeshStandardMaterial({
+        color: 0x475569, // Rich alpine slate rock
+        emissive: 0x1e293b,
+        emissiveIntensity: 0.14,
+        roughness: 0.82,
+        metalness: 0.06,
+        fog: false,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0x57534e, // Warm sunlit granite ridge
+        emissive: 0x292524,
+        emissiveIntensity: 0.14,
+        roughness: 0.84,
+        metalness: 0.05,
+        fog: false,
+      }),
+      new THREE.MeshStandardMaterial({
+        color: 0x3b4f66, // Deep mountain indigo-slate
+        emissive: 0x1e293b,
+        emissiveIntensity: 0.14,
+        roughness: 0.82,
+        metalness: 0.06,
+        fog: false,
+      }),
+    ];
+    const foothillGreenMat = new THREE.MeshStandardMaterial({
+      color: 0x15803d, // Lush emerald pine foothills
+      emissive: 0x064e3b,
+      emissiveIntensity: 0.12,
+      roughness: 0.78,
+      metalness: 0.04,
+      fog: false,
     });
     const snowMat = new THREE.MeshStandardMaterial({
-      color: 0xf1f5f9,
-      roughness: 0.55,
+      color: 0xffffff,
+      emissive: 0xe2e8f0,
+      emissiveIntensity: 0.18,
+      roughness: 0.42,
+      metalness: 0.05,
+      fog: false,
     });
 
     const peakCount = 16;
@@ -2841,23 +2875,50 @@ export class FantasyIsland extends THREE.Group {
       const dist = 78 + (i % 3) * 10;
       const h = 19 + (i % 4) * 6;
       const r = 12 + (i % 3) * 4;
+      const rockMat = rockMaterials[i % rockMaterials.length];
 
       const peakGroup = new THREE.Group();
       peakGroup.position.set(Math.cos(a) * dist, -1.5, Math.sin(a) * dist);
+      peakGroup.rotation.y = a + (i % 2 === 0 ? 0.35 : -0.25);
 
+      // 1. Lush emerald forested foothills base skirt
+      const foothillH = h * 0.42;
+      const foothill = new THREE.Mesh(
+        new THREE.ConeGeometry(r * 1.06, foothillH, 9),
+        foothillGreenMat,
+      );
+      foothill.position.y = foothillH / 2;
+
+      // 2. Main rocky alpine peak
       const base = new THREE.Mesh(
-        new THREE.ConeGeometry(r, h, 8),
-        mountainMat,
+        new THREE.ConeGeometry(r * 0.92, h, 9),
+        rockMat,
       );
       base.position.y = h / 2;
 
+      // 3. Sunlit snow-capped summit
       const cap = new THREE.Mesh(
-        new THREE.ConeGeometry(r * 0.36, h * 0.36, 8),
+        new THREE.ConeGeometry(r * 0.35, h * 0.36, 9),
         snowMat,
       );
       cap.position.y = h * 0.82;
 
-      peakGroup.add(base, cap);
+      // 4. Secondary shoulder ridge peak for natural mountain silhouette
+      const sideH = h * 0.68;
+      const sideR = r * 0.62;
+      const sidePeak = new THREE.Mesh(
+        new THREE.ConeGeometry(sideR, sideH, 8),
+        rockMaterials[(i + 1) % rockMaterials.length],
+      );
+      sidePeak.position.set(r * 0.42, sideH / 2, r * 0.18);
+
+      const sideCap = new THREE.Mesh(
+        new THREE.ConeGeometry(sideR * 0.34, sideH * 0.32, 8),
+        snowMat,
+      );
+      sideCap.position.set(r * 0.42, sideH * 0.84, r * 0.18);
+
+      peakGroup.add(foothill, base, cap, sidePeak, sideCap);
       this.add(peakGroup);
     }
   }

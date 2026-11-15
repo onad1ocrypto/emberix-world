@@ -1,6 +1,7 @@
 import {
   ACCOUNTS_STORAGE_KEY,
   ACTIVE_ACCOUNT_ID_KEY,
+  COSMETICS,
   DEFAULT_PROGRESSION,
   DEFAULT_STATS,
   STORAGE_KEY,
@@ -12,11 +13,14 @@ import {
   calculateFriendshipLevel,
   calculateLevelFromXp,
   claimDailyReward,
+  claimKeeperQuest,
   clampStat,
   evaluateAchievements,
   getHungerStateLevel,
+  isCosmeticUnlocked,
   isPetHungry,
   performPetAction,
+  syncUnlockedCosmetics,
   type HungerTickResult,
   type PetActionResult,
 } from '../game/rules';
@@ -61,6 +65,7 @@ export class StorageManager {
         ...DEFAULT_PROGRESSION,
         unlockedCosmetics: [...DEFAULT_PROGRESSION.unlockedCosmetics],
         unlockedAchievements: [...DEFAULT_PROGRESSION.unlockedAchievements],
+        claimedQuests: [],
       },
       settings: getDefaultSettings(),
     };
@@ -84,14 +89,10 @@ export class StorageManager {
         typeof parsed.progression?.selfieCount === 'number'
           ? parsed.progression.selfieCount
           : 0,
-      unlockedCosmetics: Array.from(
-        new Set([
-          ...DEFAULT_PROGRESSION.unlockedCosmetics,
-          ...(Array.isArray(parsed.progression?.unlockedCosmetics)
-            ? parsed.progression.unlockedCosmetics
-            : []),
-        ]),
-      ),
+      claimedQuests: Array.isArray(parsed.progression?.claimedQuests)
+        ? parsed.progression.claimedQuests
+        : [],
+      unlockedCosmetics: [...DEFAULT_PROGRESSION.unlockedCosmetics],
       unlockedAchievements: Array.isArray(
         parsed.progression?.unlockedAchievements,
       )
@@ -123,6 +124,14 @@ export class StorageManager {
     progression.friendshipLevel = calculateFriendshipLevel(
       decayedStats.friendship,
     );
+
+    // Strictly synchronize unlockedCosmetics with creatureLevel
+    progression.unlockedCosmetics = COSMETICS.filter(
+      (c) => progression.creatureLevel >= c.requiredCreatureLevel,
+    ).map((c) => c.id);
+    if (!progression.unlockedCosmetics.includes(progression.equippedCosmetic)) {
+      progression.equippedCosmetic = 'crown';
+    }
 
     return {
       version: 1,
@@ -534,6 +543,7 @@ export class StorageManager {
     this.state.progression.friendshipLevel = calculateFriendshipLevel(
       this.state.stats.friendship,
     );
+    syncUnlockedCosmetics(this.state.progression);
     evaluateAchievements(this.state.stats, this.state.progression);
     this.persistAndNotify();
     return {
@@ -554,6 +564,7 @@ export class StorageManager {
     this.state.progression.creatureLevel = calculateLevelFromXp(
       this.state.progression.creatureXp,
     ).level;
+    syncUnlockedCosmetics(this.state.progression);
     const newlyUnlocked = evaluateAchievements(
       this.state.stats,
       this.state.progression,
@@ -563,12 +574,42 @@ export class StorageManager {
   }
 
   public equipCosmetic(cosmeticId: CosmeticId): boolean {
+    if (!isCosmeticUnlocked(cosmeticId, this.state.progression)) {
+      return false;
+    }
     if (!this.state.progression.unlockedCosmetics.includes(cosmeticId)) {
       this.state.progression.unlockedCosmetics.push(cosmeticId);
     }
     this.state.progression.equippedCosmetic = cosmeticId;
     this.persistAndNotify();
     return true;
+  }
+
+  public claimQuest(questId: string): {
+    claimed: boolean;
+    progression: ProgressionState;
+    leveledUpPlayer: boolean;
+    leveledUpCreature: boolean;
+    newlyUnlockedCosmetics: CosmeticId[];
+    newlyUnlockedAchievements: string[];
+  } {
+    const res = claimKeeperQuest(
+      questId,
+      this.state.stats,
+      this.state.progression,
+    );
+    if (res.claimed) {
+      this.state.progression = res.progression;
+      this.persistAndNotify();
+    }
+    return {
+      claimed: res.claimed,
+      progression: this.state.progression,
+      leveledUpPlayer: res.leveledUpPlayer,
+      leveledUpCreature: res.leveledUpCreature,
+      newlyUnlockedCosmetics: res.newlyUnlockedCosmetics,
+      newlyUnlockedAchievements: res.newlyUnlockedAchievements,
+    };
   }
 
   public claimDaily(): { claimed: boolean; rewardSummary: string } {
@@ -604,6 +645,7 @@ export class StorageManager {
         lastSavedAt: Date.now(),
         unlockedCosmetics: [...DEFAULT_PROGRESSION.unlockedCosmetics],
         unlockedAchievements: [],
+        claimedQuests: [],
       },
       settings: { ...this.state.settings },
     };

@@ -2,6 +2,7 @@ import {
   ACHIEVEMENTS,
   COSMETICS,
   ISLAND_PLAYABLE_RADIUS,
+  KEEPER_QUESTS,
 } from '../constants';
 import type {
   CosmeticId,
@@ -379,17 +380,7 @@ export function performPetAction(
   prog.friendshipLevel = calculateFriendshipLevel(stats.friendship);
   prog.lastSavedAt = Date.now();
 
-  const newlyUnlockedCosmetics: CosmeticId[] = [];
-  for (const cosmetic of COSMETICS) {
-    if (
-      prog.creatureLevel >= cosmetic.requiredCreatureLevel &&
-      !prog.unlockedCosmetics.includes(cosmetic.id)
-    ) {
-      prog.unlockedCosmetics.push(cosmetic.id);
-      newlyUnlockedCosmetics.push(cosmetic.id);
-    }
-  }
-
+  const newlyUnlockedCosmetics = syncUnlockedCosmetics(prog);
   const newlyUnlockedAchievements = evaluateAchievements(stats, prog);
 
   return {
@@ -401,6 +392,169 @@ export function performPetAction(
     leveledUpCreature: prog.creatureLevel > prevCreatureLevel,
     newlyUnlockedAchievements,
     newlyUnlockedCosmetics,
+  };
+}
+
+/**
+ * Checks whether a Dragon Gear cosmetic is unlocked based on EMBER's current level
+ * or the player's unlockedCosmetics list.
+ */
+export function isCosmeticUnlocked(
+  cosmeticId: CosmeticId,
+  prog: Pick<ProgressionState, 'creatureLevel' | 'unlockedCosmetics'>,
+): boolean {
+  const def = COSMETICS.find((c) => c.id === cosmeticId);
+  if (!def) return false;
+  return (
+    prog.creatureLevel >= def.requiredCreatureLevel ||
+    prog.unlockedCosmetics.includes(cosmeticId)
+  );
+}
+
+/**
+ * Synchronizes `prog.unlockedCosmetics` with `prog.creatureLevel` so any Dragon Gear
+ * whose `requiredCreatureLevel <= prog.creatureLevel` is unlocked, returning newly unlocked IDs.
+ */
+export function syncUnlockedCosmetics(prog: ProgressionState): CosmeticId[] {
+  const newlyUnlocked: CosmeticId[] = [];
+  for (const cosmetic of COSMETICS) {
+    if (
+      prog.creatureLevel >= cosmetic.requiredCreatureLevel &&
+      !prog.unlockedCosmetics.includes(cosmetic.id)
+    ) {
+      prog.unlockedCosmetics.push(cosmetic.id);
+      newlyUnlocked.push(cosmetic.id);
+    }
+  }
+  return newlyUnlocked;
+}
+
+export interface QuestProgressInfo {
+  questId: string;
+  current: number;
+  target: number;
+  progressPercent: number;
+  completed: boolean;
+  claimed: boolean;
+  claimable: boolean;
+}
+
+export function getQuestProgress(
+  questId: string,
+  stats: PetStats,
+  prog: ProgressionState,
+): QuestProgressInfo {
+  const quest = KEEPER_QUESTS.find((q) => q.id === questId);
+  const target = quest ? quest.targetCount : 1;
+  let rawCurrent = 0;
+
+  switch (questId) {
+    case 'quest_feed_sunberry':
+      rawCurrent = prog.feedCount || 0;
+      break;
+    case 'quest_pet_bond':
+      rawCurrent = prog.petCount || 0;
+      break;
+    case 'quest_play_orb':
+      rawCurrent = prog.playCount || 0;
+      break;
+    case 'quest_dance_party':
+      rawCurrent = prog.danceCount || 0;
+      break;
+    case 'quest_snap_selfie':
+      rawCurrent = prog.selfieCount || 0;
+      break;
+    case 'quest_friendship_80':
+      rawCurrent = stats.friendship || 0;
+      break;
+    default:
+      rawCurrent = 0;
+  }
+
+  const current = Math.min(target, Math.max(0, rawCurrent));
+  const completed = current >= target;
+  const claimed = Array.isArray(prog.claimedQuests)
+    ? prog.claimedQuests.includes(questId)
+    : false;
+  const claimable = completed && !claimed;
+  const progressPercent = Math.min(100, Math.round((current / target) * 100));
+
+  return {
+    questId,
+    current,
+    target,
+    progressPercent,
+    completed,
+    claimed,
+    claimable,
+  };
+}
+
+export function claimKeeperQuest(
+  questId: string,
+  stats: PetStats,
+  currentProg: ProgressionState,
+): {
+  claimed: boolean;
+  progression: ProgressionState;
+  leveledUpPlayer: boolean;
+  leveledUpCreature: boolean;
+  newlyUnlockedCosmetics: CosmeticId[];
+  newlyUnlockedAchievements: string[];
+} {
+  const quest = KEEPER_QUESTS.find((q) => q.id === questId);
+  const prog: ProgressionState = {
+    ...currentProg,
+    unlockedCosmetics: [...currentProg.unlockedCosmetics],
+    unlockedAchievements: [...currentProg.unlockedAchievements],
+    claimedQuests: Array.isArray(currentProg.claimedQuests)
+      ? [...currentProg.claimedQuests]
+      : [],
+  };
+
+  if (!quest) {
+    return {
+      claimed: false,
+      progression: prog,
+      leveledUpPlayer: false,
+      leveledUpCreature: false,
+      newlyUnlockedCosmetics: [],
+      newlyUnlockedAchievements: [],
+    };
+  }
+
+  const status = getQuestProgress(questId, stats, prog);
+  if (!status.claimable) {
+    return {
+      claimed: false,
+      progression: prog,
+      leveledUpPlayer: false,
+      leveledUpCreature: false,
+      newlyUnlockedCosmetics: [],
+      newlyUnlockedAchievements: [],
+    };
+  }
+
+  const prevPlayerLevel = prog.playerLevel;
+  const prevCreatureLevel = prog.creatureLevel;
+
+  prog.claimedQuests!.push(questId);
+  prog.playerXp += quest.playerXpReward;
+  prog.creatureXp += quest.creatureXpReward;
+  prog.playerLevel = calculateLevelFromXp(prog.playerXp).level;
+  prog.creatureLevel = calculateLevelFromXp(prog.creatureXp).level;
+  prog.lastSavedAt = Date.now();
+
+  const newlyUnlockedCosmetics = syncUnlockedCosmetics(prog);
+  const newlyUnlockedAchievements = evaluateAchievements(stats, prog);
+
+  return {
+    claimed: true,
+    progression: prog,
+    leveledUpPlayer: prog.playerLevel > prevPlayerLevel,
+    leveledUpCreature: prog.creatureLevel > prevCreatureLevel,
+    newlyUnlockedCosmetics,
+    newlyUnlockedAchievements,
   };
 }
 
@@ -468,6 +622,11 @@ export function claimDailyReward(
 
   const nextProg: ProgressionState = {
     ...prog,
+    unlockedCosmetics: [...prog.unlockedCosmetics],
+    unlockedAchievements: [...prog.unlockedAchievements],
+    claimedQuests: Array.isArray(prog.claimedQuests)
+      ? [...prog.claimedQuests]
+      : [],
     playerXp: prog.playerXp + 75,
     creatureXp: prog.creatureXp + 90,
     lastDailyClaimDate: todayIsoDate,
@@ -475,6 +634,7 @@ export function claimDailyReward(
   nextProg.playerLevel = calculateLevelFromXp(nextProg.playerXp).level;
   nextProg.creatureLevel = calculateLevelFromXp(nextProg.creatureXp).level;
   nextProg.friendshipLevel = calculateFriendshipLevel(nextStats.friendship);
+  syncUnlockedCosmetics(nextProg);
 
   return {
     claimed: true,
@@ -757,10 +917,15 @@ export const ISLAND_SOLID_OBSTACLES: ReadonlyArray<{
   { x: 3.45, z: -7.25, radius: 1.45 },
   { x: 5.55, z: -6.45, radius: 1.25 },
 
-  // 2. Fantasy Castle ("Kastil Fantasi" at x: -1.0, z: -22.2)
-  { x: -1.0, z: -22.2, radius: 4.4 },
-  { x: -4.2, z: -22.2, radius: 2.2 },
-  { x: 2.2, z: -22.2, radius: 2.2 },
+  // 2. Fantasy Castle ("Kastil Fantasi" at x: -1.0, z: -22.2, scale: 1.22) — Full Citadel, Towers, Plinth & Gatehouse
+  { x: -1.0, z: -22.2, radius: 5.2 },
+  { x: -4.48, z: -20.19, radius: 1.65 }, // Front-left corner tower
+  { x: 2.48, z: -20.19, radius: 1.65 }, // Front-right corner tower
+  { x: -5.39, z: -22.57, radius: 1.48 }, // Outer-left bastion tower
+  { x: 3.39, z: -22.57, radius: 1.48 }, // Outer-right bastion tower
+  { x: -4.48, z: -24.21, radius: 1.58 }, // Rear-left corner tower
+  { x: 2.48, z: -24.21, radius: 1.58 }, // Rear-right corner tower
+  { x: -1.0, z: -19.25, radius: 2.15 }, // Front gatehouse & grand staircase
 
   // 3. Sunberry Orchard Bush (at x: 7.5, z: -4.5) — solid core while 3.2m interactive zone stays reachable
   { x: 7.5, z: -4.5, radius: 1.32 },
@@ -786,6 +951,47 @@ export const ISLAND_SOLID_OBSTACLES: ReadonlyArray<{
   { x: 9.7, z: 2.5, radius: 0.88 },
   { x: -2.5, z: -11.0, radius: 0.78 },
 ];
+
+/**
+ * Axis-aligned bounding boxes covering the Solara Fantasy Castle curtain walls,
+ * plinth foundation, and front gatehouse staircase at (x: -1.0, z: -22.2, scale: 1.22).
+ */
+export const CASTLE_COLLIDER_BOUNDS = {
+  minX: -5.95,
+  maxX: 3.95,
+  minZ: -26.4,
+  maxZ: -18.25,
+} as const;
+
+export const CASTLE_ENTRANCE_BOUNDS = {
+  minX: -2.65,
+  maxX: 0.65,
+  minZ: -18.5,
+  maxZ: -17.25,
+} as const;
+
+/**
+ * Returns true if (x, z) lies inside the Fantasy Castle footprint.
+ */
+export function isPointInsideCastle(x: number, z: number): boolean {
+  if (
+    x > CASTLE_COLLIDER_BOUNDS.minX + 0.02 &&
+    x < CASTLE_COLLIDER_BOUNDS.maxX - 0.02 &&
+    z > CASTLE_COLLIDER_BOUNDS.minZ + 0.02 &&
+    z < CASTLE_COLLIDER_BOUNDS.maxZ - 0.02
+  ) {
+    return true;
+  }
+  if (
+    x > CASTLE_ENTRANCE_BOUNDS.minX + 0.02 &&
+    x < CASTLE_ENTRANCE_BOUNDS.maxX - 0.02 &&
+    z > CASTLE_ENTRANCE_BOUNDS.minZ + 0.02 &&
+    z < CASTLE_ENTRANCE_BOUNDS.maxZ - 0.02
+  ) {
+    return true;
+  }
+  return false;
+}
 
 /**
  * Returns true if the (x, z) point lies inside the river or waterfall pool
@@ -876,6 +1082,71 @@ export function resolveIslandMovement(
     return false;
   };
 
+  // Helper to push (x, z) outside an axis-aligned rectangular building footprint
+  const resolveBoxCollider = (
+    minX: number,
+    maxX: number,
+    minZ: number,
+    maxZ: number,
+  ): boolean => {
+    if (x <= minX || x >= maxX || z <= minZ || z >= maxZ) {
+      return false;
+    }
+    // If previous position was cleanly outside one of the faces, resolve back to that face
+    if (prevZ >= maxZ - 0.05) {
+      z = maxZ;
+      return true;
+    }
+    if (prevZ <= minZ + 0.05) {
+      z = minZ;
+      return true;
+    }
+    if (prevX >= maxX - 0.05) {
+      x = maxX;
+      return true;
+    }
+    if (prevX <= minX + 0.05) {
+      x = minX;
+      return true;
+    }
+
+    // Fallback: push to closest edge (avoid pushing to minX if near the western waterfall cliff)
+    const distLeft = x - minX;
+    const distRight = maxX - x;
+    const distBack = z - minZ;
+    const distFront = maxZ - z;
+    const minDist = Math.min(distLeft, distRight, distBack, distFront);
+    if (minDist === distFront) z = maxZ;
+    else if (minDist === distRight) x = maxX;
+    else if (minDist === distBack) z = minZ;
+    else x = minX;
+    return true;
+  };
+
+  const resolveCastleAndSolidObstacles = (): void => {
+    resolveBoxCollider(
+      CASTLE_ENTRANCE_BOUNDS.minX,
+      CASTLE_ENTRANCE_BOUNDS.maxX,
+      CASTLE_ENTRANCE_BOUNDS.minZ,
+      CASTLE_ENTRANCE_BOUNDS.maxZ,
+    );
+    resolveBoxCollider(
+      CASTLE_COLLIDER_BOUNDS.minX,
+      CASTLE_COLLIDER_BOUNDS.maxX,
+      CASTLE_COLLIDER_BOUNDS.minZ,
+      CASTLE_COLLIDER_BOUNDS.maxZ,
+    );
+    for (const obs of ISLAND_SOLID_OBSTACLES) {
+      resolveCircleCollider(obs.x, obs.z, obs.radius);
+    }
+    for (const tree of ISLAND_TREES) {
+      resolveCircleCollider(tree.x, tree.z, tree.colliderRadius);
+    }
+    for (const rock of ISLAND_ROCKS) {
+      resolveCircleCollider(rock.x, rock.z, rock.colliderRadius);
+    }
+  };
+
   // 2. Individual circular colliders for all 14 bridge pillars & posts (tiang jembatan)
   for (const pillar of BRIDGE_PILLAR_COLLIDERS) {
     if (resolveCircleCollider(pillar.x, pillar.z, pillar.radius)) {
@@ -883,16 +1154,8 @@ export function resolveIslandMovement(
     }
   }
 
-  // 3. Solid Buildings, Crystal Pedestals, Flower Gardens, Mushrooms, Trees, and Rocks
-  for (const obs of ISLAND_SOLID_OBSTACLES) {
-    resolveCircleCollider(obs.x, obs.z, obs.radius);
-  }
-  for (const tree of ISLAND_TREES) {
-    resolveCircleCollider(tree.x, tree.z, tree.colliderRadius);
-  }
-  for (const rock of ISLAND_ROCKS) {
-    resolveCircleCollider(rock.x, rock.z, rock.colliderRadius);
-  }
+  // 3. Solid Buildings (Castle, Pet House), Crystal Pedestals, Flower Gardens, Mushrooms, Trees, and Rocks
+  resolveCastleAndSolidObstacles();
 
   // 4. River & Waterfall Plunge Pool collision (outside the wooden bridge walkway)
   const onBridgeWalkway =
@@ -921,6 +1184,21 @@ export function resolveIslandMovement(
 
   // 5. Northern Waterfall Cliff boulders barrier (around x: -6.5, z: -22.5)
   resolveCircleCollider(-6.5, -22.5, 4.6);
+
+  // 5b. Re-enforce Castle & Solid Obstacles so river/cliff push near (-6.5, -20..-22)
+  // never pushes the character sideways into the west wall of the Castle!
+  if (
+    x > CASTLE_COLLIDER_BOUNDS.minX &&
+    x < CASTLE_COLLIDER_BOUNDS.maxX &&
+    z > CASTLE_COLLIDER_BOUNDS.minZ &&
+    z < CASTLE_COLLIDER_BOUNDS.maxZ
+  ) {
+    // If squeezed between the western waterfall cliff/river and the Castle, push south (+Z) out of the pinch zone
+    if (x < -1.5 && z > -23.0) {
+      z = CASTLE_COLLIDER_BOUNDS.maxZ;
+    }
+  }
+  resolveCastleAndSolidObstacles();
 
   // 6. Re-verify bridge walkway Z clamp if river push nudged X back into bridge span
   if (

@@ -76,6 +76,8 @@ export class EmberModel extends THREE.Group {
   private crownGroup = new THREE.Group();
   private collarGroup = new THREE.Group();
   private scarfGroup = new THREE.Group();
+  private scarfCapePivot = new THREE.Group();
+  private scarfFrontTailsPivot = new THREE.Group();
   private auraGroup = new THREE.Group();
   private auraOverheadHalo = new THREE.Group();
 
@@ -1481,74 +1483,195 @@ export class EmberModel extends THREE.Group {
     });
     this.bodyGroup.add(this.collarGroup);
 
-    // 3. Emberweave Scarf — Thick cozy hand-knitted Royal Indigo-Teal, Warm Cream & Gold winter scarf wrapped outside EMBER's 0.31m torso with flowing tails on front & sides
-    this.scarfGroup.position.set(0, 0.16, 0.035);
+    // 3. Royal Scarf & Cape (Emberweave Scarf) — Cozy Crimson & Gold striped knitted neck scarf,
+    // front Sunstone Brooch with fringed tassel tails, AND a flowing Royal Dragon Cape on the back!
+    this.scarfGroup.position.set(0, 0.165, 0.025);
+
+    const scarfKnitCanvas = document.createElement('canvas');
+    scarfKnitCanvas.width = 256;
+    scarfKnitCanvas.height = 256;
+    const sCtx = scarfKnitCanvas.getContext('2d');
+    if (sCtx) {
+      // Royal Sapphire-Indigo & Crimson knitted wool base with bright golden stripes for high contrast against orange scales
+      sCtx.fillStyle = '#1e3a8a';
+      sCtx.fillRect(0, 0, 256, 256);
+      for (let y = 0; y < 256; y += 32) {
+        sCtx.fillStyle = y % 64 === 0 ? '#1d4ed8' : '#b91c1c';
+        sCtx.fillRect(0, y, 256, 20);
+        // Golden & warm cream woven stripe bands
+        sCtx.fillStyle = '#f59e0b';
+        sCtx.fillRect(0, y + 20, 256, 8);
+        sCtx.fillStyle = '#fef08a';
+        sCtx.fillRect(0, y + 28, 256, 4);
+      }
+      // Subtle vertical knit stitch ribs
+      sCtx.strokeStyle = 'rgba(15, 23, 42, 0.28)';
+      sCtx.lineWidth = 2;
+      for (let x = 0; x < 256; x += 12) {
+        sCtx.beginPath();
+        sCtx.moveTo(x, 0);
+        sCtx.lineTo(x, 256);
+        sCtx.stroke();
+      }
+    }
+    const scarfKnitTex = new THREE.CanvasTexture(scarfKnitCanvas);
+    scarfKnitTex.colorSpace = THREE.SRGBColorSpace;
+    scarfKnitTex.wrapS = THREE.RepeatWrapping;
+    scarfKnitTex.wrapT = THREE.RepeatWrapping;
+    scarfKnitTex.repeat.set(3, 2);
+
     const scarfMat = new THREE.MeshStandardMaterial({
-      color: 0x2563eb,
-      emissive: 0x1d4ed8,
-      emissiveIntensity: 0.32,
-      roughness: 0.52,
-      metalness: 0.08,
+      map: scarfKnitTex,
+      color: 0xffffff,
+      emissive: 0x1e1b4b,
+      emissiveIntensity: 0.12,
+      roughness: 0.65,
+      metalness: 0.05,
     });
-    const scarfGoldStripeMat = new THREE.MeshStandardMaterial({
-      color: 0xfde047,
-      emissive: 0xf59e0b,
-      emissiveIntensity: 0.42,
-      roughness: 0.32,
-      metalness: 0.35,
+    const scarfGoldTrimMat = new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.35,
+      roughness: 0.28,
+      metalness: 0.65,
+    });
+    const royalCapeMat = new THREE.MeshStandardMaterial({
+      color: 0x1d4ed8,
+      emissive: 0x1e3a8a,
+      emissiveIntensity: 0.18,
+      roughness: 0.45,
+      metalness: 0.12,
+      side: THREE.DoubleSide,
     });
 
+    // Plush double-wrapped knitted neck scarf loops
     const scarfTorusLower = new THREE.Mesh(
-      new THREE.TorusGeometry(0.312, 0.068, 20, 40),
+      new THREE.TorusGeometry(0.308, 0.062, 20, 44),
       scarfMat,
     );
-    scarfTorusLower.rotation.x = Math.PI / 2 + 0.18;
+    scarfTorusLower.rotation.x = Math.PI / 2 + 0.16;
     this.scarfGroup.add(scarfTorusLower);
 
     const scarfTorusUpper = new THREE.Mesh(
-      new THREE.TorusGeometry(0.295, 0.056, 18, 36),
+      new THREE.TorusGeometry(0.292, 0.052, 18, 40),
       scarfMat,
     );
-    scarfTorusUpper.rotation.x = Math.PI / 2 + 0.15;
-    scarfTorusUpper.position.set(0, 0.048, 0.01);
+    scarfTorusUpper.rotation.x = Math.PI / 2 + 0.14;
+    scarfTorusUpper.position.set(0, 0.046, 0.008);
     this.scarfGroup.add(scarfTorusUpper);
 
     const scarfGoldBand = new THREE.Mesh(
-      new THREE.TorusGeometry(0.332, 0.026, 14, 40),
-      scarfGoldStripeMat,
+      new THREE.TorusGeometry(0.326, 0.02, 14, 44),
+      scarfGoldTrimMat,
     );
-    scarfGoldBand.rotation.x = Math.PI / 2 + 0.18;
-    scarfGoldBand.position.set(0, 0.015, 0.005);
+    scarfGoldBand.rotation.x = Math.PI / 2 + 0.16;
+    scarfGoldBand.position.set(0, 0.014, 0.005);
     this.scarfGroup.add(scarfGoldBand);
 
-    // Cozy oversized scarf knots & flowing tails on both front-right and side-left so it's unmistakable from every camera angle
-    [-1, 1].forEach((side) => {
-      const scarfKnot = new THREE.Mesh(
-        new THREE.SphereGeometry(0.088, 16, 14),
+    // Front Center-Right Knitted Scarf Knot + Golden Sunstone Brooch + Layered Fringed Scarf Tails
+    this.scarfFrontTailsPivot.position.set(0.06, -0.025, 0.345);
+    this.scarfGroup.add(this.scarfFrontTailsPivot);
+
+    const frontKnot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.076, 16, 14),
+      scarfMat,
+    );
+    frontKnot.scale.set(1.25, 0.92, 0.85);
+    this.scarfFrontTailsPivot.add(frontKnot);
+
+    // Golden Sunstone Brooch Clasp pinned on the front knot
+    const broochRim = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.052, 0.052, 0.024, 20),
+      scarfGoldTrimMat,
+    );
+    broochRim.rotation.x = Math.PI / 2;
+    broochRim.position.set(0, 0.005, 0.058);
+    this.scarfFrontTailsPivot.add(broochRim);
+
+    const broochRuby = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.036, 0),
+      rubyMat,
+    );
+    broochRuby.position.set(0, 0.005, 0.074);
+    this.scarfFrontTailsPivot.add(broochRuby);
+
+    // Two overlapping knitted scarf tails hanging neatly down the chest with golden fringe tassels
+    [
+      { x: -0.038, y: -0.155, z: 0.022, len: 0.26, rotZ: 0.12 },
+      { x: 0.042, y: -0.135, z: 0.038, len: 0.22, rotZ: -0.16 },
+    ].forEach((tailCfg) => {
+      const tailGroup = new THREE.Group();
+      tailGroup.position.set(tailCfg.x, tailCfg.y, tailCfg.z);
+      tailGroup.rotation.z = tailCfg.rotZ;
+      tailGroup.rotation.x = -0.14;
+
+      const tailCloth = new THREE.Mesh(
+        new THREE.BoxGeometry(0.095, tailCfg.len, 0.028),
         scarfMat,
       );
-      scarfKnot.scale.set(1.15, 0.95, 0.95);
-      scarfKnot.position.set(side * 0.24, -0.02, 0.24);
-      this.scarfGroup.add(scarfKnot);
+      tailGroup.add(tailCloth);
 
-      const scarfTailMain = new THREE.Mesh(
-        new THREE.BoxGeometry(0.125, 0.34, 0.055),
-        scarfMat,
+      const tailBottomGoldStripe = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.032, 0.032),
+        scarfGoldTrimMat,
       );
-      scarfTailMain.position.set(side * 0.27, -0.175, 0.24);
-      scarfTailMain.rotation.z = -side * 0.22;
-      scarfTailMain.rotation.y = side * 0.55;
-      this.scarfGroup.add(scarfTailMain);
+      tailBottomGoldStripe.position.set(0, -tailCfg.len * 0.5 + 0.024, 0);
+      tailGroup.add(tailBottomGoldStripe);
 
-      const scarfTailStripe = new THREE.Mesh(
-        new THREE.BoxGeometry(0.132, 0.045, 0.062),
-        scarfGoldStripeMat,
-      );
-      scarfTailStripe.position.set(side * 0.295, -0.275, 0.24);
-      scarfTailStripe.rotation.z = -side * 0.22;
-      scarfTailStripe.rotation.y = side * 0.55;
-      this.scarfGroup.add(scarfTailStripe);
+      // 4 cute golden yarn fringe tassels at the bottom of each scarf tail
+      for (let tIdx = -1.5; tIdx <= 1.5; tIdx += 1) {
+        const tassel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.007, 0.011, 0.042, 8),
+          scarfGoldTrimMat,
+        );
+        tassel.position.set(tIdx * 0.022, -tailCfg.len * 0.5 - 0.018, 0);
+        tailGroup.add(tassel);
+      }
+
+      this.scarfFrontTailsPivot.add(tailGroup);
     });
+
+    // Flowing Royal Dragon Cape draping down EMBER's back (unmistakable from the 3D Island behind-camera view!)
+    this.scarfCapePivot.position.set(0, 0.03, -0.275);
+    this.scarfCapePivot.rotation.x = 0.26;
+    this.scarfGroup.add(this.scarfCapePivot);
+
+    // Curved trapezoid royal cape mesh
+    const capeShape = new THREE.Shape();
+    capeShape.moveTo(-0.18, 0);
+    capeShape.lineTo(0.18, 0);
+    capeShape.quadraticCurveTo(0.28, -0.24, 0.31, -0.48);
+    capeShape.quadraticCurveTo(0, -0.55, -0.31, -0.48);
+    capeShape.quadraticCurveTo(-0.28, -0.24, -0.18, 0);
+
+    const capeGeo = new THREE.ExtrudeGeometry(capeShape, {
+      depth: 0.018,
+      bevelEnabled: true,
+      bevelSegments: 2,
+      steps: 1,
+      bevelSize: 0.008,
+      bevelThickness: 0.008,
+    });
+    const capeMesh = new THREE.Mesh(capeGeo, royalCapeMat);
+    this.scarfCapePivot.add(capeMesh);
+
+    // Golden royal hem trim along the bottom of the cape
+    const capeGoldHem = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 0.036, 0.032),
+      scarfGoldTrimMat,
+    );
+    capeGoldHem.position.set(0, -0.475, 0.009);
+    this.scarfCapePivot.add(capeGoldHem);
+
+    // Golden Sunstone Emblem on the center of the cape back
+    const capeSunCrest = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.068, 0),
+      scarfGoldTrimMat,
+    );
+    capeSunCrest.scale.set(1.1, 1.35, 0.35);
+    capeSunCrest.position.set(0, -0.24, -0.008);
+    this.scarfCapePivot.add(capeSunCrest);
+
     this.bodyGroup.add(this.scarfGroup);
 
     // 4. Solar Halo Aura — Intersecting celestial golden & violet rings + overhead solar halo + 8 large orbiting star crystals
@@ -2068,6 +2191,24 @@ export class EmberModel extends THREE.Group {
       this.auraOverheadHalo.rotation.y -= clampedDt * 2.2;
       this.auraOverheadHalo.position.y =
         0.44 + Math.sin(this.animTime * 4.0) * 0.025;
+    }
+
+    // Gentle breeze flutter on the Royal Scarf & Cape when visible
+    if (this.scarfGroup.visible) {
+      const isMovingOrDancing =
+        this.currentAnim === 'walk' ||
+        this.currentAnim === 'run' ||
+        this.currentAnim === 'jump' ||
+        this.currentAnim === 'dancing';
+      const flutterSpeed = isMovingOrDancing ? 9.5 : 3.2;
+      const flutterAmp = isMovingOrDancing ? 0.18 : 0.06;
+      this.scarfCapePivot.rotation.x =
+        (isMovingOrDancing ? 0.42 : 0.26) +
+        Math.sin(this.animTime * flutterSpeed) * flutterAmp;
+      this.scarfCapePivot.rotation.z =
+        Math.cos(this.animTime * flutterSpeed * 0.7) * (flutterAmp * 0.5);
+      this.scarfFrontTailsPivot.rotation.z =
+        Math.sin(this.animTime * flutterSpeed * 0.8) * (flutterAmp * 0.45);
     }
 
     // Update reaction particles

@@ -8,6 +8,7 @@ import {
   COSMETICS,
   CREATURES,
   DANCE_TRACKS,
+  KEEPER_QUESTS,
   PLAYER_AVATARS,
   PLAYER_TITLES,
 } from '../constants';
@@ -18,7 +19,9 @@ import {
   canClaimDailyReward,
   getHungerStateLevel,
   getIslandZoneLabel,
+  getQuestProgress,
   ISLAND_TREES,
+  isCosmeticUnlocked,
   isPetHungry,
   riverCenterXAt,
   worldToMinimapPoint,
@@ -55,6 +58,7 @@ export class GameUI {
   private selectedEncyclopediaId: 'ember' | 'aqua' | 'moss' | 'volt' = 'ember';
   private dockCollapsed = false;
   private dockExtrasOpen = false;
+  private questsModalOpen = false;
   private mobileNavOpen = false;
   private confirmResetOpen = false;
   private authTab: 'login' | 'register' = 'register';
@@ -234,6 +238,7 @@ export class GameUI {
     this.mode = nextMode;
     this.confirmResetOpen = false;
     this.mobileNavOpen = false;
+    this.questsModalOpen = false;
     this.draftPetName = storageManager.getPetName();
 
     if (nextMode === 'title') {
@@ -370,6 +375,16 @@ export class GameUI {
     if (result.leveledUpCreature) {
       msg += ` · ${petName} reached Lv.${result.progression.creatureLevel}!`;
     }
+    if (result.newlyUnlockedCosmetics.length > 0) {
+      const t = getTranslation(prevState.settings.language);
+      const gearNames = result.newlyUnlockedCosmetics
+        .map((cid) => COSMETICS.find((c) => c.id === cid)?.name)
+        .filter(Boolean)
+        .join(', ');
+      if (gearNames) {
+        msg += ` · ${t.hud.gearUnlockedToast} ${gearNames}!`;
+      }
+    }
     if (result.newlyUnlockedAchievements.length > 0) {
       const ach = ACHIEVEMENTS.find(
         (a) => a.id === result.newlyUnlockedAchievements[0],
@@ -377,6 +392,12 @@ export class GameUI {
       if (ach) {
         msg += ` · Achievement Unlocked: ${ach.title}!`;
       }
+    }
+    if (
+      this.mode === 'playing' &&
+      (result.leveledUpCreature || result.newlyUnlockedCosmetics.length > 0)
+    ) {
+      this.render();
     }
     this.showFeedback(msg);
   }
@@ -1012,6 +1033,9 @@ export class GameUI {
           : t.hud.active;
     const stateBadgeClass =
       !stats.isSleeping && hungryActive ? 'state-hungry' : '';
+    const claimableQuestsCount = KEEPER_QUESTS.filter(
+      (q) => getQuestProgress(q.id, stats, progression).claimable,
+    ).length;
 
     return `
       <main class="hud-layer" aria-label="3D World HUD">
@@ -1186,6 +1210,19 @@ export class GameUI {
           <div class="dock-top-bar">
             <div class="pet-feedback-toast${this.feedbackVisible ? ' toast-pop' : ' toast-hidden'}" id="pet-feedback-toast">${this.feedbackVisible ? this.feedbackBannerText : ''}</div>
             <div class="dock-top-Controls-right">
+              <button
+                type="button"
+                class="btn-dock-toggle btn-dock-quests-toggle ${this.questsModalOpen ? 'quests-toggle-active' : ''}"
+                id="btn-toggle-quests"
+                aria-expanded="${this.questsModalOpen}"
+              >
+                <span>📜 ${t.hud.questsToggle}</span>
+                ${
+                  claimableQuestsCount > 0
+                    ? `<span class="quest-count-pill tabular-nums" id="quest-claimable-badge">${claimableQuestsCount}</span>`
+                    : ''
+                }
+              </button>
               <button type="button" class="btn-dock-toggle btn-dock-extras-toggle" id="btn-toggle-dock-extras" aria-expanded="${this.dockExtrasOpen}">
                 ${this.dockExtrasOpen ? `▾ ${t.hud.musicToggle}` : `🎵 ${t.hud.musicToggle}`}
               </button>
@@ -1236,9 +1273,10 @@ export class GameUI {
             <!-- Quick Cosmetic & Copyright-Free Dance Music Bar -->
             <div class="dock-strips-stack">
               <div class="cosmetic-strip" role="group" aria-label="Select Dragon Gear">
-                <span class="cosmetic-strip-label">${t.hud.dragonGear}</span>
+                <span class="cosmetic-strip-label">${t.hud.dragonGear} (Lv.${creatureLvl.level})</span>
                 ${COSMETICS.map((c) => {
                   const active = progression.equippedCosmetic === c.id;
+                  const unlocked = isCosmeticUnlocked(c.id, progression);
                   const gearIcons: Record<CosmeticId, string> = {
                     none: '🐉',
                     crown: '👑',
@@ -1249,11 +1287,17 @@ export class GameUI {
                   return `
                     <button
                       type="button"
-                      class="btn-cosmetic-chip ${active ? 'chip-active' : ''}"
+                      class="btn-cosmetic-chip ${active ? 'chip-active' : ''} ${!unlocked ? 'chip-locked' : ''}"
                       data-cosmetic-id="${c.id}"
-                      title="${c.description}"
+                      data-unlocked="${unlocked}"
+                      data-req-level="${c.requiredCreatureLevel}"
+                      title="${unlocked ? `${c.name} (Lv.${c.requiredCreatureLevel}): ${c.description}` : `🔒 Requires EMBER Lv.${c.requiredCreatureLevel} — ${c.description}`}"
                     >
-                      ${gearIcons[c.id]} ${c.name}
+                      ${
+                        unlocked
+                          ? `${gearIcons[c.id]} ${c.name} ${active ? '✓' : `<small class="gear-lvl-tag">Lv.${c.requiredCreatureLevel}</small>`}`
+                          : `🔒 ${c.name} <small class="gear-lvl-tag">Lv.${c.requiredCreatureLevel}</small>`
+                      }
                     </button>
                   `;
                 }).join('')}
@@ -1278,7 +1322,114 @@ export class GameUI {
             </div>
           </div>
         </section>
+
+        ${this.questsModalOpen ? this.renderQuestsModalOverlayHTML() : ''}
       </main>
+    `;
+  }
+
+  private renderKeeperQuestsListHTML(): string {
+    const { stats, progression, settings } = storageManager.getState();
+    const lang = settings.language;
+    const t = getTranslation(lang);
+    const petName = storageManager.getPetName();
+    const creatureLvl = calculateLevelFromXp(progression.creatureXp);
+    const gearIcons: Record<CosmeticId, string> = {
+      none: '🐉',
+      crown: '👑',
+      collar: '💎',
+      scarf: '🧣',
+      flame_aura: '✨',
+    };
+
+    return `
+      <div class="dragon-gear-roadmap-strip">
+        ${COSMETICS.filter((c) => c.id !== 'none')
+          .map((c) => {
+            const unlocked = isCosmeticUnlocked(c.id, progression);
+            const equipped = progression.equippedCosmetic === c.id;
+            return `
+              <div class="gear-roadmap-item ${unlocked ? 'roadmap-unlocked' : 'roadmap-locked'} ${equipped ? 'roadmap-equipped' : ''}">
+                <span class="gear-roadmap-icon">${unlocked ? gearIcons[c.id] : '🔒'}</span>
+                <div class="gear-roadmap-copy">
+                  <strong>${c.name}</strong>
+                  <small>${petName} Lv.${c.requiredCreatureLevel} · ${unlocked ? (equipped ? 'Equipped' : 'Unlocked') : `Locked (Now Lv.${creatureLvl.level})`}</small>
+                </div>
+              </div>
+            `;
+          })
+          .join('')}
+      </div>
+
+      <div class="quests-list-grid">
+        ${KEEPER_QUESTS.map((q) => {
+          const prog = getQuestProgress(q.id, stats, progression);
+          const pct = Math.min(
+            100,
+            Math.round((prog.current / Math.max(1, prog.target)) * 100),
+          );
+          return `
+            <article class="quest-item-card ${prog.claimed ? 'quest-claimed' : prog.claimable ? 'quest-claimable' : ''}" data-quest-card="${q.id}">
+              <div class="quest-card-top">
+                <span class="quest-icon-badge" aria-hidden="true">${q.icon}</span>
+                <div class="quest-title-col">
+                  <div class="quest-title-row">
+                    <h4 class="quest-title">${q.title[lang]}</h4>
+                    <span class="quest-xp-pill tabular-nums">+${q.creatureXpReward} Pet XP · +${q.playerXpReward} XP</span>
+                  </div>
+                  <p class="quest-desc">${q.description[lang].replace(/\bEMBER\b/g, petName)}</p>
+                  ${
+                    q.unlockHint
+                      ? `<span class="quest-gear-hint">🧣 ${q.unlockHint}</span>`
+                      : ''
+                  }
+                </div>
+              </div>
+
+              <div class="quest-card-bottom">
+                <div class="quest-progress-wrap">
+                  <div class="quest-progress-bar">
+                    <div class="quest-progress-fill" style="width: ${pct}%"></div>
+                  </div>
+                  <span class="quest-progress-text tabular-nums">${prog.current} / ${prog.target}</span>
+                </div>
+
+                ${
+                  prog.claimed
+                    ? `<span class="quest-status-claimed">${t.hud.questClaimedBadge}</span>`
+                    : prog.claimable
+                      ? `<button type="button" class="btn-claim-quest" data-claim-quest-id="${q.id}">${t.hud.questClaimBtn}</button>`
+                      : `<span class="quest-status-pending tabular-nums">${pct}%</span>`
+                }
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  private renderQuestsModalOverlayHTML(): string {
+    const { progression, settings } = storageManager.getState();
+    const t = getTranslation(settings.language);
+    const petName = storageManager.getPetName();
+    const creatureLvl = calculateLevelFromXp(progression.creatureXp);
+
+    return `
+      <div class="quests-modal-backdrop" id="quests-modal-overlay" role="dialog" aria-modal="true" aria-label="${t.hud.questsTitle}">
+        <div class="quests-drawer-card ui-card">
+          <div class="quests-drawer-header">
+            <div>
+              <h3 class="quests-drawer-title">${t.hud.questsTitle}</h3>
+              <p class="quests-drawer-subtitle">${t.hud.questsSubtitle.replace(/\bEMBER\b/g, petName)} · <strong>${petName} Lv.${creatureLvl.level} (${creatureLvl.currentLevelXp}/${creatureLvl.nextLevelXp} XP)</strong></p>
+            </div>
+            <button type="button" class="btn-close-modal" id="btn-close-quests" aria-label="${t.settings.back}">
+              <span>✕ ${t.hud.closeToggle}</span>
+            </button>
+          </div>
+          ${this.renderKeeperQuestsListHTML()}
+        </div>
+      </div>
     `;
   }
 
@@ -2029,7 +2180,14 @@ export class GameUI {
               </div>
             </section>
 
-            <!-- 4. Keeper Achievements -->
+            <!-- 4. Keeper Quests & Dragon Gear Progression -->
+            <section class="settings-group">
+              <h3 class="section-heading">${t.hud.questsTitle}</h3>
+              <p class="body-copy">${t.hud.questsSubtitle}</p>
+              ${this.renderKeeperQuestsListHTML()}
+            </section>
+
+            <!-- 5. Keeper Achievements -->
             <section class="settings-group">
               <h3 class="section-heading">${t.settings.achievementsHeading} (${progression.unlockedAchievements.length} / ${ACHIEVEMENTS.length})</h3>
               <div class="achievements-grid">
@@ -2656,6 +2814,29 @@ export class GameUI {
       const cLvl = calculateLevelFromXp(progression.creatureXp);
       creatureName.innerHTML = `${petName} <span class="hud-lvl-text tabular-nums">Lv.${cLvl.level}</span>`;
     }
+
+    const questBadge = this.root.querySelector<HTMLElement>(
+      '#quest-claimable-badge',
+    );
+    const claimableCount = KEEPER_QUESTS.filter(
+      (q) => getQuestProgress(q.id, stats, progression).claimable,
+    ).length;
+    const questBtn = this.root.querySelector<HTMLElement>('#btn-toggle-quests');
+    if (questBtn) {
+      if (claimableCount > 0) {
+        if (questBadge) {
+          questBadge.textContent = String(claimableCount);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'quest-count-pill tabular-nums';
+          span.id = 'quest-claimable-badge';
+          span.textContent = String(claimableCount);
+          questBtn.appendChild(span);
+        }
+      } else if (questBadge) {
+        questBadge.remove();
+      }
+    }
   }
 
   private updateARHudValues(): void {
@@ -2931,6 +3112,34 @@ export class GameUI {
       });
 
     this.root
+      .querySelector('#btn-toggle-quests')
+      ?.addEventListener('click', () => {
+        this.sound.playClick();
+        this.questsModalOpen = !this.questsModalOpen;
+        this.render();
+      });
+
+    this.root
+      .querySelector('#btn-close-quests')
+      ?.addEventListener('click', () => {
+        this.sound.playClick();
+        this.questsModalOpen = false;
+        this.render();
+      });
+
+    this.root
+      .querySelector('#quests-modal-overlay')
+      ?.addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+          this.sound.playClick();
+          this.questsModalOpen = false;
+          this.render();
+        }
+      });
+
+    this.bindQuestClaimButtons();
+
+    this.root
       .querySelectorAll<HTMLButtonElement>('[data-pet-action]')
       .forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -2944,8 +3153,9 @@ export class GameUI {
       .forEach((btn) => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.cosmeticId as CosmeticId;
-          if (id && storageManager.equipCosmetic(id)) {
-            const cosmetic = COSMETICS.find((c) => c.id === id);
+          if (!id) return;
+          const cosmetic = COSMETICS.find((c) => c.id === id);
+          if (storageManager.equipCosmetic(id)) {
             this.world.setCosmetic(id);
             this.sound.playHappyChirp();
             this.world.triggerEmberAnimation('happy', 1.8);
@@ -2956,6 +3166,19 @@ export class GameUI {
                 `✨ Dragon Gear: ${cosmetic.name} — ${cosmetic.description}`,
               );
             }
+          } else if (cosmetic) {
+            const lang = storageManager.getState().settings.language;
+            const t = getTranslation(lang);
+            this.sound.playClick();
+            this.showSpeechBubble(
+              `🔒 Lv.${cosmetic.requiredCreatureLevel} Gear!`,
+            );
+            this.showFeedback(
+              t.hud.gearLockedToast.replace(
+                '{level}',
+                String(cosmetic.requiredCreatureLevel),
+              ),
+            );
           }
         });
       });
@@ -3342,6 +3565,44 @@ export class GameUI {
       ?.addEventListener('click', () => {
         this.sound.playClick();
         this.setMode('title');
+      });
+
+    this.bindQuestClaimButtons();
+  }
+
+  private bindQuestClaimButtons(): void {
+    this.root
+      .querySelectorAll<HTMLButtonElement>('[data-claim-quest-id]')
+      .forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const questId = btn.dataset.claimQuestId;
+          if (!questId) return;
+          const res = storageManager.claimQuest(questId);
+          if (res.claimed) {
+            const lang = storageManager.getState().settings.language;
+            const t = getTranslation(lang);
+            const petName = storageManager.getPetName();
+            const questDef = KEEPER_QUESTS.find((q) => q.id === questId);
+            this.sound.playLevelUp();
+            this.world.triggerEmberAnimation('happy', 2.4);
+            let msg = `${t.hud.questRewardToast} (+${questDef?.creatureXpReward || 0} Pet XP, +${questDef?.playerXpReward || 0} XP)`;
+            if (res.leveledUpCreature) {
+              msg += ` · 🎉 ${petName} Lv.${res.progression.creatureLevel}!`;
+            }
+            if (res.newlyUnlockedCosmetics.length > 0) {
+              const gearNames = res.newlyUnlockedCosmetics
+                .map((cid) => COSMETICS.find((c) => c.id === cid)?.name)
+                .filter(Boolean)
+                .join(', ');
+              if (gearNames) {
+                msg += ` · ${t.hud.gearUnlockedToast} ${gearNames}!`;
+              }
+            }
+            this.render();
+            this.showSpeechBubble(`🎉 Quest Complete! Lv.${res.progression.creatureLevel}!`);
+            this.showFeedback(msg);
+          }
+        });
       });
   }
 

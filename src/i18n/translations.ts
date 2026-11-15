@@ -80,6 +80,14 @@ export interface TranslationPack {
     starvingAlertTitle: string;
     hungryFeedNowBtn: string;
     hungrySpeechBubble: string;
+    questsToggle: string;
+    questsTitle: string;
+    questsSubtitle: string;
+    questClaimBtn: string;
+    questClaimedBadge: string;
+    questRewardToast: string;
+    gearLockedToast: string;
+    gearUnlockedToast: string;
   };
   selfie: {
     title: string;
@@ -223,6 +231,16 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       starvingAlertTitle: 'is starving and needs food now!',
       hungryFeedNowBtn: '🍎 Feed Now',
       hungrySpeechBubble: 'My tummy is rumbling... Feed me a Sunberry? 🍎🥺',
+      questsToggle: 'Quests',
+      questsTitle: 'KEEPER LEVEL-UP QUESTS & DRAGON GEAR',
+      questsSubtitle:
+        'Complete care & adventure missions to level up EMBER and unlock higher-tier Dragon Gear!',
+      questClaimBtn: '🎁 Claim Reward',
+      questClaimedBadge: '✓ Claimed',
+      questRewardToast: 'Quest Completed! Awarded XP & Dragon Bond boost!',
+      gearLockedToast:
+        'Unlocks at Pet Level {level}! Complete Keeper Quests (📜 Quests) to level up.',
+      gearUnlockedToast: '🎉 Level Up! New Dragon Gear unlocked:',
     },
     selfie: {
       title: 'SELFIE PORTRAIT STUDIO',
@@ -374,6 +392,16 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       starvingAlertTitle: 'sangat lapar dan butuh makan sekarang!',
       hungryFeedNowBtn: '🍎 Beri Makan',
       hungrySpeechBubble: 'Perutku keroncongan... Mau buah Sunberry! 🍎🥺',
+      questsToggle: 'Misi',
+      questsTitle: 'MISI NAIK LEVEL & DRAGON GEAR',
+      questsSubtitle:
+        'Selesaikan misi perawatan & petualangan untuk menaikkan level EMBER dan membuka Dragon Gear!',
+      questClaimBtn: '🎁 Klaim Hadiah',
+      questClaimedBadge: '✓ Selesai',
+      questRewardToast: 'Misi Selesai! XP & Ikatan Persahabatan bertambah!',
+      gearLockedToast:
+        'Terbuka di Pet Level {level}! Selesaikan Misi (📜 Misi) untuk menaikkan level.',
+      gearUnlockedToast: '🎉 Naik Level! Dragon Gear baru terbuka:',
     },
     selfie: {
       title: 'STUDIO POTRET SELFIE PET',
@@ -524,6 +552,15 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationPack> = {
       starvingAlertTitle: '非常饥饿，快喂食吧！',
       hungryFeedNowBtn: '🍎 立即喂食',
       hungrySpeechBubble: '肚子咕咕叫了…能喂我太阳果吗？🍎🥺',
+      questsToggle: '任务',
+      questsTitle: '升级任务与宠物装扮',
+      questsSubtitle: '完成互动任务即可提升 EMBER 等级并解锁高级龙族装扮！',
+      questClaimBtn: '🎁 领取奖励',
+      questClaimedBadge: '✓ 已领取',
+      questRewardToast: '任务完成！已获得 XP 与羁绊奖励！',
+      gearLockedToast:
+        '需宠物达到 Lv.{level} 解锁！完成升级任务 (📜 任务) 即可快速升级。',
+      gearUnlockedToast: '🎉 升级啦！已解锁全新龙族装扮：',
     },
     selfie: {
       title: '宠物自拍合影工作室',

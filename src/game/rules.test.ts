@@ -414,19 +414,56 @@ test('real-time radar minimap coordinate mapping and zone labels track player po
   assert.equal(outerPt.y, 50);
 });
 
-test('all 5 Dragon Gear cosmetics are unlocked and can be equipped immediately', () => {
+test('Dragon Gear cosmetics unlock by EMBER level (Lv.1 to Lv.4) and Keeper Quests award XP to unlock higher gear', () => {
   const mgr = new StorageManager();
-  const cosmetics = ['none', 'crown', 'collar', 'scarf', 'flame_aura'] as const;
-  for (const id of cosmetics) {
-    assert.equal(
-      mgr.getState().progression.unlockedCosmetics.includes(id),
-      true,
-      `Expected Dragon Gear cosmetic '${id}' to be unlocked by default`,
-    );
-    const equipped = mgr.equipCosmetic(id);
-    assert.equal(equipped, true);
-    assert.equal(mgr.getState().progression.equippedCosmetic, id);
-  }
+  mgr.resetProgress();
+
+  // At Lv.1, only 'none' and 'crown' are unlocked
+  assert.deepEqual(mgr.getState().progression.unlockedCosmetics, [
+    'none',
+    'crown',
+  ]);
+  assert.equal(mgr.equipCosmetic('crown'), true);
+  assert.equal(mgr.equipCosmetic('collar'), false); // Requires Lv.2
+  assert.equal(mgr.equipCosmetic('scarf'), false); // Requires Lv.3
+  assert.equal(mgr.equipCosmetic('flame_aura'), false); // Requires Lv.4
+
+  // Feed 3 times and Pet 3 times to complete quest_feed_sunberry and quest_pet_bond
+  mgr.dispatchPetAction('feed');
+  mgr.dispatchPetAction('feed');
+  mgr.dispatchPetAction('feed');
+  mgr.dispatchPetAction('pet');
+  mgr.dispatchPetAction('pet');
+  mgr.dispatchPetAction('pet');
+
+  const claim1 = mgr.claimQuest('quest_feed_sunberry');
+  assert.equal(claim1.claimed, true);
+  assert.ok(mgr.getState().progression.creatureLevel >= 2);
+  assert.equal(
+    mgr.getState().progression.unlockedCosmetics.includes('collar'),
+    true,
+  );
+  assert.equal(mgr.equipCosmetic('collar'), true);
+
+  // Complete play & dance quests to reach Lv.3 and unlock Royal Scarf & Cape ('scarf')
+  mgr.dispatchPetAction('play');
+  mgr.dispatchPetAction('play');
+  mgr.dispatchPetAction('dance');
+  mgr.dispatchPetAction('dance');
+  mgr.claimQuest('quest_pet_bond');
+  mgr.claimQuest('quest_play_orb');
+  mgr.claimQuest('quest_dance_party');
+
+  assert.ok(
+    mgr.getState().progression.creatureLevel >= 3,
+    `Expected EMBER Lv.3+, got Lv.${mgr.getState().progression.creatureLevel}`,
+  );
+  assert.equal(
+    mgr.getState().progression.unlockedCosmetics.includes('scarf'),
+    true,
+  );
+  assert.equal(mgr.equipCosmetic('scarf'), true);
+  assert.equal(mgr.getState().progression.equippedCosmetic, 'scarf');
 });
 
 test('background hunger timer periodically decreases hunger and triggers hungry state notifications at low levels', () => {
@@ -524,4 +561,49 @@ test('feed action triggers celebratory golden spark burst descriptors and slight
     `Expected secondary joyful bounce around 0.085m, got ${secondBounce}`,
   );
 });
+
+test('collision resolution prevents walking through the Fantasy Castle from any direction including river/waterfall side', async () => {
+  const { isPointInsideCastle } = await import('./rules');
+
+  // 1. Approaching straight into the front gatehouse (x = -1.0, z = -17.0 -> -21.0)
+  const fromFront = resolveIslandMovement(-1.0, -17.0, -1.0, -21.0);
+  assert.equal(
+    isPointInsideCastle(fromFront.x, fromFront.z),
+    false,
+    `Character must not walk through front gatehouse of Castle (${JSON.stringify(fromFront)})`,
+  );
+
+  // 2. Approaching into front-left corner tower (x = -4.48, z = -18.0 -> -20.5)
+  const fromFrontLeft = resolveIslandMovement(-4.48, -18.0, -4.48, -20.5);
+  assert.equal(
+    isPointInsideCastle(fromFrontLeft.x, fromFrontLeft.z),
+    false,
+    `Character must not walk through front-left Castle tower (${JSON.stringify(fromFrontLeft)})`,
+  );
+
+  // 3. Approaching into front-right corner tower (x = 2.48, z = -18.0 -> -20.5)
+  const fromFrontRight = resolveIslandMovement(2.48, -18.0, 2.48, -20.5);
+  assert.equal(
+    isPointInsideCastle(fromFrontRight.x, fromFrontRight.z),
+    false,
+    `Character must not walk through front-right Castle tower (${JSON.stringify(fromFrontRight)})`,
+  );
+
+  // 4. Approaching from the East wall (x = 4.5 -> 0.0, z = -22.2)
+  const fromEast = resolveIslandMovement(4.5, -22.2, 0.0, -22.2);
+  assert.equal(
+    isPointInsideCastle(fromEast.x, fromEast.z),
+    false,
+    `Character must not walk through East wall of Castle (${JSON.stringify(fromEast)})`,
+  );
+
+  // 5. Approaching near the West waterfall/river pinch zone (x = -4.0, z = -18.1 -> -21.5)
+  const fromWestRiverPinch = resolveIslandMovement(-4.0, -18.1, -4.0, -21.5);
+  assert.equal(
+    isPointInsideCastle(fromWestRiverPinch.x, fromWestRiverPinch.z),
+    false,
+    `River/cliff push must never force character inside West wall of Castle (${JSON.stringify(fromWestRiverPinch)})`,
+  );
+});
+
 

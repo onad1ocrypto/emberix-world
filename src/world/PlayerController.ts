@@ -916,9 +916,11 @@ export class PlayerController {
     if (resolvedPos.blockedByRiver) {
       this.velocity.x *= 0.2;
     }
-    if (resolvedPos.blockedByBridgePillar) {
-      if (Math.abs(resolvedPos.x - rawNextX) > 0.001) this.velocity.x *= 0.2;
-      if (Math.abs(resolvedPos.z - rawNextZ) > 0.001) this.velocity.z *= 0.2;
+    if (Math.abs(resolvedPos.x - rawNextX) > 0.001) {
+      this.velocity.x *= 0.2;
+    }
+    if (Math.abs(resolvedPos.z - rawNextZ) > 0.001) {
+      this.velocity.z *= 0.2;
     }
     this.position.x = resolvedPos.x;
     this.position.z = resolvedPos.z;

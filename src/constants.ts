@@ -5,6 +5,7 @@ import type {
   CreatureDefinition,
   DanceTrackDefinition,
   GameSettings,
+  KeeperQuestDefinition,
   PetStats,
   PlayerAvatarId,
   ProgressionState,
@@ -264,8 +265,9 @@ export const COSMETICS: CosmeticDefinition[] = [
   },
   {
     id: 'scarf',
-    name: 'Emberweave Scarf',
-    description: 'A cozy adventurer scarf woven from warm phoenix threads.',
+    name: 'Royal Scarf & Cape',
+    description:
+      'A cozy crimson-gold knitted neck scarf paired with a flowing royal dragon cape & sunstone brooch.',
     requiredCreatureLevel: 3,
     accentColor: '#F43F5E',
   },
@@ -275,6 +277,117 @@ export const COSMETICS: CosmeticDefinition[] = [
     description: 'Orbiting rings of celestial fire stars around EMBER.',
     requiredCreatureLevel: 4,
     accentColor: '#A855F7',
+  },
+];
+
+export const KEEPER_QUESTS: KeeperQuestDefinition[] = [
+  {
+    id: 'quest_feed_sunberry',
+    icon: '🍎',
+    title: {
+      en: 'Sunberry Feast',
+      id: 'Sarapan Buah Sunberry',
+      zh: '太阳果美味大餐',
+    },
+    description: {
+      en: 'Feed EMBER 2 times with roasted Sunberries.',
+      id: 'Beri makan EMBER 2 kali dengan buah Sunberry panggang.',
+      zh: '给 EMBER 喂食 2 次烤太阳果。',
+    },
+    targetCount: 2,
+    creatureXpReward: 55,
+    playerXpReward: 45,
+    unlockHint: 'Helps unlock Lv.2 Runic Star Collar 💎',
+  },
+  {
+    id: 'quest_pet_bond',
+    icon: '🐾',
+    title: {
+      en: 'Warm Dragon Affection',
+      id: 'Kasih Sayang Sahabat Naga',
+      zh: '温暖幼龙抚摸',
+    },
+    description: {
+      en: 'Pet EMBER 3 times to strengthen your bond.',
+      id: 'Elus (Pet) EMBER 3 kali untuk mempererat ikatan.',
+      zh: '抚摸 EMBER 3 次以加深羁绊。',
+    },
+    targetCount: 3,
+    creatureXpReward: 60,
+    playerXpReward: 50,
+    unlockHint: 'Helps unlock Lv.2 Runic Star Collar 💎',
+  },
+  {
+    id: 'quest_play_orb',
+    icon: '🎮',
+    title: {
+      en: 'Fire Orb Acrobatics',
+      id: 'Latihan Lompat Bola Api',
+      zh: '火球跳跃特训',
+    },
+    description: {
+      en: 'Play with EMBER 2 times in the meadow.',
+      id: 'Ajak EMBER bermain (Play) 2 kali di padang pulau.',
+      zh: '与 EMBER 一起玩耍 2 次。',
+    },
+    targetCount: 2,
+    creatureXpReward: 75,
+    playerXpReward: 60,
+    unlockHint: 'Helps unlock Lv.3 Royal Scarf & Cape 🧣',
+  },
+  {
+    id: 'quest_dance_party',
+    icon: '🎵',
+    title: {
+      en: 'Solara Dance Festival',
+      id: 'Festival Dansa Solara',
+      zh: '索拉岛热舞节',
+    },
+    description: {
+      en: 'Dance with EMBER 1 time to any island rhythm.',
+      id: 'Ajak EMBER menari (Dance) 1 kali dengan musik pulau.',
+      zh: '伴随音乐与 EMBER 跳舞 1 次。',
+    },
+    targetCount: 1,
+    creatureXpReward: 70,
+    playerXpReward: 55,
+    unlockHint: 'Helps unlock Lv.3 Royal Scarf & Cape 🧣',
+  },
+  {
+    id: 'quest_snap_selfie',
+    icon: '📸',
+    title: {
+      en: 'Keeper Souvenir Portrait',
+      id: 'Kenangan Potret Selfie',
+      zh: '驯龙师纪念自拍',
+    },
+    description: {
+      en: 'Capture 1 Selfie Portrait with EMBER in the Selfie Studio.',
+      id: 'Abadikan 1 foto bersama EMBER di Studio Selfie.',
+      zh: '在自拍工作室与 EMBER 拍摄 1 张纪念自拍。',
+    },
+    targetCount: 1,
+    creatureXpReward: 85,
+    playerXpReward: 70,
+    unlockHint: 'Helps unlock Lv.4 Solar Halo Aura ✨',
+  },
+  {
+    id: 'quest_friendship_80',
+    icon: '⭐',
+    title: {
+      en: 'Soulbound Dragon Bestie',
+      id: 'Ikatan Persahabatan Sejati',
+      zh: '灵魂契约挚友',
+    },
+    description: {
+      en: 'Reach 80% Friendship Bond with EMBER.',
+      id: 'Capai 80% Ikatan Persahabatan (Bond) bersama EMBER.',
+      zh: '与 EMBER 的亲密羁绊达到 80%。',
+    },
+    targetCount: 80,
+    creatureXpReward: 110,
+    playerXpReward: 90,
+    unlockHint: 'Helps unlock Lv.4 Solar Halo Aura ✨',
   },
 ];
 
@@ -345,9 +458,10 @@ export const DEFAULT_PROGRESSION: ProgressionState = {
   danceCount: 0,
   arScanCount: 0,
   selfieCount: 0,
+  claimedQuests: [],
   lastSavedAt: Date.now(),
   lastDailyClaimDate: '',
-  unlockedCosmetics: ['none', 'crown', 'collar', 'scarf', 'flame_aura'],
+  unlockedCosmetics: ['none', 'crown'],
   equippedCosmetic: 'crown',
   unlockedAchievements: [],
 };

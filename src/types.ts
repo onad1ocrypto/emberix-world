@@ -105,6 +105,17 @@ export interface AchievementState {
   xpReward: number;
 }
 
+export interface KeeperQuestDefinition {
+  id: string;
+  icon: string;
+  title: { en: string; id: string; zh: string };
+  description: { en: string; id: string; zh: string };
+  targetCount: number;
+  creatureXpReward: number;
+  playerXpReward: number;
+  unlockHint?: string;
+}
+
 export interface ProgressionState {
   petName: string;
   playerXp: number;
@@ -119,6 +130,7 @@ export interface ProgressionState {
   danceCount: number;
   arScanCount: number;
   selfieCount?: number;
+  claimedQuests?: string[];
   lastSavedAt: number;
   lastDailyClaimDate: string; // YYYY-MM-DD
   unlockedCosmetics: CosmeticId[];
